@@ -6,7 +6,7 @@ import { colors, radius, spacing } from "../theme";
 type PrimaryButtonProps = {
   label: string;
   onPress: () => void;
-  variant?: "primary" | "secondary";
+  variant?: "primary" | "secondary" | "success";
 };
 
 export function PrimaryButton({
@@ -14,13 +14,24 @@ export function PrimaryButton({
   onPress,
   variant = "primary",
 }: PrimaryButtonProps) {
-  if (variant === "secondary") {
+  if (variant === "secondary" || variant === "success") {
     return (
       <Pressable
         onPress={onPress}
-        style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}
+        style={({ pressed }) => [
+          styles.secondary,
+          variant === "success" && styles.success,
+          pressed && styles.pressed,
+        ]}
       >
-        <Text style={styles.secondaryLabel}>{label}</Text>
+        <Text
+          style={[
+            styles.secondaryLabel,
+            variant === "success" && styles.successLabel,
+          ]}
+        >
+          {label}
+        </Text>
       </Pressable>
     );
   }
@@ -75,6 +86,14 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 16,
     fontWeight: "600",
+  },
+  success: {
+    backgroundColor: colors.success,
+    borderColor: colors.success,
+  },
+  successLabel: {
+    color: colors.text,
+    fontWeight: "700",
   },
   pressed: {
     opacity: 0.92,

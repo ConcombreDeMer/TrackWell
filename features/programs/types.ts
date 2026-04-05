@@ -10,6 +10,7 @@ export interface Step {
 export interface Course {
   id: string;
   name: string;
+  completed: boolean;
   dayOfWeek: DayOfWeek;
   steps: Step[];
 }

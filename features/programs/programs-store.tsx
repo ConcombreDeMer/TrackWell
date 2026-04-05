@@ -11,6 +11,7 @@ import {
 
 type ProgramsStoreValue = {
   programs: Program[];
+  selectedProgramId?: string;
   programDraft: ProgramDraft;
   updateProgramDraft: (updates: Partial<Pick<ProgramDraft, "name" | "description">>) => void;
   setDraftNumberOfWeeks: (numberOfWeeks: number) => void;
@@ -21,20 +22,30 @@ type ProgramsStoreValue = {
   startEditingProgram: (programId: string) => Program | undefined;
   saveProgramDraft: () => Program;
   deleteProgram: (programId: string) => void;
+  selectProgram: (programId: string) => void;
+  setCourseCompleted: (
+    programId: string,
+    weekIndex: number,
+    courseId: string,
+    completed: boolean,
+  ) => void;
   updateCourseInProgram: (programId: string, input: CreateCourseInput & { courseId: string }) => void;
   deleteCourseFromProgram: (programId: string, weekIndex: number, courseId: string) => void;
   getProgramById: (programId: string) => Program | undefined;
+  getSelectedProgram: () => Program | undefined;
 };
 
 const ProgramsStoreContext = createContext<ProgramsStoreValue | null>(null);
 
 export function ProgramsStoreProvider({ children }: PropsWithChildren) {
   const [programs, setPrograms] = useState<Program[]>([]);
+  const [selectedProgramId, setSelectedProgramId] = useState<string | undefined>(undefined);
   const [programDraft, setProgramDraft] = useState<ProgramDraft>(createInitialProgramDraft);
 
   const value = useMemo<ProgramsStoreValue>(() => {
     return {
       programs,
+      selectedProgramId,
       programDraft,
       updateProgramDraft(updates) {
         setProgramDraft((current) => ({
@@ -66,6 +77,7 @@ export function ProgramsStoreProvider({ children }: PropsWithChildren) {
             const baseCourse = createCourse(input);
             const nextCourse = {
               ...baseCourse,
+              completed: existingCourse?.completed ?? baseCourse.completed,
               id: existingCourse?.id ?? baseCourse.id,
               name:
                 existingCourse?.name ??
@@ -101,6 +113,7 @@ export function ProgramsStoreProvider({ children }: PropsWithChildren) {
             const baseCourse = createCourse(input);
             const nextCourse = {
               ...baseCourse,
+              completed: existingCourse.completed,
               id: existingCourse.id,
               name: existingCourse.name,
             };
@@ -159,6 +172,31 @@ export function ProgramsStoreProvider({ children }: PropsWithChildren) {
       },
       deleteProgram(programId) {
         setPrograms((current) => current.filter((program) => program.id !== programId));
+        setSelectedProgramId((current) => (current === programId ? undefined : current));
+      },
+      selectProgram(programId) {
+        setSelectedProgramId(programId);
+      },
+      setCourseCompleted(programId, weekIndex, courseId, completed) {
+        setPrograms((current) =>
+          current.map((program) =>
+            program.id === programId
+              ? {
+                  ...program,
+                  weeks: program.weeks.map((week) =>
+                    week.index === weekIndex
+                      ? {
+                          ...week,
+                          courses: week.courses.map((course) =>
+                            course.id === courseId ? { ...course, completed } : course,
+                          ),
+                        }
+                      : week,
+                  ),
+                }
+              : program,
+          ),
+        );
       },
       updateCourseInProgram(programId, input) {
         setPrograms((current) =>
@@ -183,6 +221,7 @@ export function ProgramsStoreProvider({ children }: PropsWithChildren) {
                 const baseCourse = createCourse(input);
                 const nextCourse = {
                   ...baseCourse,
+                  completed: existingCourse.completed,
                   id: existingCourse.id,
                   name: existingCourse.name,
                 };
@@ -221,8 +260,13 @@ export function ProgramsStoreProvider({ children }: PropsWithChildren) {
       getProgramById(programId) {
         return programs.find((program) => program.id === programId);
       },
+      getSelectedProgram() {
+        return selectedProgramId
+          ? programs.find((program) => program.id === selectedProgramId)
+          : undefined;
+      },
     };
-  }, [programDraft, programs]);
+  }, [programDraft, programs, selectedProgramId]);
 
   return <ProgramsStoreContext.Provider value={value}>{children}</ProgramsStoreContext.Provider>;
 }

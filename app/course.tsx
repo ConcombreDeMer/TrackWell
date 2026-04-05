@@ -37,6 +37,7 @@ export default function CourseScreen() {
     deleteCourseFromProgram,
     getProgramById,
     programDraft,
+    setCourseCompleted,
   } = useProgramsStore();
 
   const isDraftFlow = draft === "true";
@@ -105,6 +106,19 @@ export default function CourseScreen() {
     ]);
   }
 
+  function handleToggleCompletion() {
+    if (!programId) {
+      return;
+    }
+
+    setCourseCompleted(
+      programId,
+      Number(weekIndex),
+      selectedSource.course.id,
+      !selectedSource.course.completed,
+    );
+  }
+
   return (
     <View style={styles.overlay}>
       <View style={styles.sheet}>
@@ -121,6 +135,13 @@ export default function CourseScreen() {
         <View style={styles.actionRow}>
           <ActionPill label="Edit" onPress={handleEdit} />
           <ActionPill destructive label="Delete" onPress={handleDelete} />
+          {!isDraftFlow ? (
+            <ActionPill
+              emphasis={selectedSource.course.completed ? "success" : "default"}
+              label={selectedSource.course.completed ? "Completed" : "Mark Complete"}
+              onPress={handleToggleCompletion}
+            />
+          ) : null}
         </View>
 
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -143,10 +164,12 @@ export default function CourseScreen() {
 }
 
 function ActionPill({
+  emphasis = "default",
   destructive = false,
   label,
   onPress,
 }: {
+  emphasis?: "default" | "success";
   destructive?: boolean;
   label: string;
   onPress: () => void;
@@ -154,9 +177,19 @@ function ActionPill({
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [styles.actionPill, pressed && styles.pressed]}
+      style={({ pressed }) => [
+        styles.actionPill,
+        emphasis === "success" && styles.actionPillSuccess,
+        pressed && styles.pressed,
+      ]}
     >
-      <Text style={[styles.actionPillLabel, destructive && styles.actionPillLabelDestructive]}>
+      <Text
+        style={[
+          styles.actionPillLabel,
+          destructive && styles.actionPillLabelDestructive,
+          emphasis === "success" && styles.actionPillLabelSuccess,
+        ]}
+      >
         {label}
       </Text>
     </Pressable>
@@ -377,6 +410,10 @@ const styles = StyleSheet.create({
     minHeight: 42,
     paddingHorizontal: spacing.lg,
   },
+  actionPillSuccess: {
+    backgroundColor: colors.success,
+    borderColor: colors.success,
+  },
   actionPillLabel: {
     color: colors.text,
     fontSize: 14,
@@ -384,6 +421,9 @@ const styles = StyleSheet.create({
   },
   actionPillLabelDestructive: {
     color: "#A33B3B",
+  },
+  actionPillLabelSuccess: {
+    color: colors.text,
   },
   content: {
     paddingBottom: 40,

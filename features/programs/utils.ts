@@ -96,6 +96,7 @@ export function createDraftFromProgram(program: Program): ProgramDraft {
 
 export function createCourse(input: CreateCourseInput): Course {
   return {
+    completed: false,
     id: createId(`course-${input.weekIndex}-${input.dayOfWeek}`),
     name: "",
     dayOfWeek: input.dayOfWeek,
@@ -115,6 +116,13 @@ export function getProgramCourseCount(program: Program) {
   return program.weeks.reduce((total, week) => total + week.courses.length, 0);
 }
 
+export function getProgramCompletedCourseCount(program: Program) {
+  return program.weeks.reduce(
+    (total, week) => total + week.courses.filter((course) => course.completed).length,
+    0,
+  );
+}
+
 export function getProgramCompletion(program: Program) {
   const courseCount = getProgramCourseCount(program);
 
@@ -122,7 +130,7 @@ export function getProgramCompletion(program: Program) {
     return 0;
   }
 
-  return Math.min(100, courseCount * 12);
+  return Math.round((getProgramCompletedCourseCount(program) / courseCount) * 100);
 }
 
 export function getCourseDurationSeconds(course: Course) {
@@ -150,4 +158,25 @@ export function getCourseForDay(week: Week, dayOfWeek: DayOfWeek) {
 
 export function getDayName(dayOfWeek: DayOfWeek) {
   return weekDayNames[dayOfWeek];
+}
+
+export function getChronologicalCourses(program: Program) {
+  return program.weeks
+    .flatMap((week) =>
+      week.courses.map((course) => ({
+        course,
+        weekIndex: week.index,
+      })),
+    )
+    .sort((first, second) => {
+      if (first.weekIndex !== second.weekIndex) {
+        return first.weekIndex - second.weekIndex;
+      }
+
+      return first.course.dayOfWeek - second.course.dayOfWeek;
+    });
+}
+
+export function getNextCourse(program: Program) {
+  return getChronologicalCourses(program).find(({ course }) => !course.completed);
 }

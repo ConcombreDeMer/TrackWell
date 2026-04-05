@@ -3,10 +3,13 @@ export type { Course, DayOfWeek, Program, ProgramDraft, Step, StepType, Week } f
 export {
   createDraftFromProgram,
   formatDurationFromSeconds,
+  getChronologicalCourses,
   getCourseDurationSeconds,
   getCourseForDay,
   getCoursesForDay,
   getDayName,
+  getNextCourse,
+  getProgramCompletedCourseCount,
   getProgramCompletion,
   getProgramCourseCount,
   weekDayLabels,

@@ -1,3 +1,4 @@
+import { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { DayOfWeek, ProgramDraft, getCoursesForDay, weekDayLabels } from "../../features/programs";
@@ -6,12 +7,22 @@ import { colors, radius, spacing } from "../../theme";
 type ProgramDraftCalendarProps = {
   draft: ProgramDraft;
   onSelectCell: (weekIndex: number, dayOfWeek: DayOfWeek) => void;
+  titleSlot?: ReactNode;
+  showCompleted?: boolean;
 };
 
-export function ProgramDraftCalendar({ draft, onSelectCell }: ProgramDraftCalendarProps) {
+export function ProgramDraftCalendar({
+  draft,
+  onSelectCell,
+  showCompleted = false,
+  titleSlot,
+}: ProgramDraftCalendarProps) {
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>Calendar</Text>
+      <View style={styles.titleRow}>
+        <Text style={styles.title}>Calendar</Text>
+        {titleSlot}
+      </View>
 
       <View style={styles.headerRow}>
         <View style={styles.weekLabelSpacer} />
@@ -30,6 +41,7 @@ export function ProgramDraftCalendar({ draft, onSelectCell }: ProgramDraftCalend
               const dayOfWeek = index as DayOfWeek;
               const courses = getCoursesForDay(week, dayOfWeek);
               const hasCourse = courses.length > 0;
+              const hasCompletedCourse = courses.some((course) => course.completed);
 
               return (
                 <Pressable
@@ -37,7 +49,11 @@ export function ProgramDraftCalendar({ draft, onSelectCell }: ProgramDraftCalend
                   onPress={() => onSelectCell(week.index, dayOfWeek)}
                   style={({ pressed }) => [
                     styles.cell,
-                    hasCourse ? styles.cellFilled : styles.cellEmpty,
+                    hasCourse
+                      ? showCompleted && hasCompletedCourse
+                        ? styles.cellCompleted
+                        : styles.cellFilled
+                      : styles.cellEmpty,
                     pressed && styles.cellPressed,
                   ]}
                 >
@@ -67,6 +83,11 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 16,
     fontWeight: "700",
+  },
+  titleRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   headerRow: {
     alignItems: "center",
@@ -108,6 +129,9 @@ const styles = StyleSheet.create({
   },
   cellFilled: {
     backgroundColor: "#AFAFAF",
+  },
+  cellCompleted: {
+    backgroundColor: colors.success,
   },
   cellPressed: {
     opacity: 0.8,

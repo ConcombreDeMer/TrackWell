@@ -1,4 +1,6 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { BackButton } from "../components/navigation/BackButton";
@@ -17,8 +19,15 @@ import { SectionCard } from "../ui/SectionCard";
 
 export default function ProgramScreen() {
   const router = useRouter();
+  const [showCompleted, setShowCompleted] = useState(false);
   const { programId } = useLocalSearchParams<{ programId?: string }>();
-  const { deleteProgram, getProgramById, startEditingProgram } = useProgramsStore();
+  const {
+    deleteProgram,
+    getProgramById,
+    selectProgram,
+    selectedProgramId,
+    startEditingProgram,
+  } = useProgramsStore();
   const program = programId ? getProgramById(programId) : undefined;
 
   if (!program) {
@@ -60,6 +69,27 @@ export default function ProgramScreen() {
     );
   }
 
+  function handleSelectProgram() {
+    if (selectedProgramId && selectedProgramId !== selectedProgram.id) {
+      Alert.alert(
+        "Replace selected program",
+        "You already selected a program. If you continue, the current one will be removed from the Home screen.",
+        [
+          { style: "cancel", text: "Cancel" },
+          {
+            text: "Continue",
+            onPress: () => selectProgram(selectedProgram.id),
+          },
+        ],
+      );
+      return;
+    }
+
+    selectProgram(selectedProgram.id);
+  }
+
+  const isSelectedProgram = selectedProgramId === selectedProgram.id;
+
   return (
     <ScrollView contentContainerStyle={styles.content} style={styles.screen}>
       <BackButton />
@@ -73,12 +103,18 @@ export default function ProgramScreen() {
       </SectionCard>
 
       <View style={styles.actions}>
+        <PrimaryButton
+          label={isSelectedProgram ? "Program Selected" : "Select Program"}
+          onPress={handleSelectProgram}
+          variant={isSelectedProgram ? "success" : "primary"}
+        />
         <PrimaryButton label="Edit Program" onPress={handleEditProgram} />
         <PrimaryButton label="Delete Program" onPress={handleDeleteProgram} variant="secondary" />
       </View>
 
       <ProgramDraftCalendar
         draft={selectedProgram}
+        showCompleted={showCompleted}
         onSelectCell={(weekIndex, dayOfWeek) => {
           const selectedWeek = selectedProgram.weeks.find((week) => week.index === weekIndex);
           const existingCourse = selectedWeek ? getCourseForDay(selectedWeek, dayOfWeek) : undefined;
@@ -96,6 +132,19 @@ export default function ProgramScreen() {
             },
           });
         }}
+        titleSlot={
+          <Pressable
+            onPress={() => setShowCompleted((current) => !current)}
+            style={({ pressed }) => [styles.checkboxRow, pressed && styles.pressed]}
+          >
+            <Text style={styles.checkboxLabel}>Completed</Text>
+            <View style={[styles.checkbox, showCompleted && styles.checkboxActive]}>
+              {showCompleted ? (
+                <Ionicons color={colors.text} name="checkmark" size={18} />
+              ) : null}
+            </View>
+          </Pressable>
+        }
       />
 
       {selectedProgram.weeks.map((week) => (
@@ -132,7 +181,11 @@ export default function ProgramScreen() {
                         },
                     })
                   }
-                  style={({ pressed }) => [styles.courseCard, pressed && styles.pressed]}
+                  style={({ pressed }) => [
+                    styles.courseCard,
+                    course.completed && styles.courseCardCompleted,
+                    pressed && styles.pressed,
+                  ]}
                 >
                   <View style={styles.courseBody}>
                     <Text style={styles.courseTitle}>{course.name || `Course ${index + 1}`}</Text>
@@ -201,6 +254,30 @@ const styles = StyleSheet.create({
   actions: {
     gap: spacing.sm,
   },
+  checkboxRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  checkboxLabel: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  checkbox: {
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderColor: "#C6C6C6",
+    borderRadius: 10,
+    borderWidth: 1,
+    height: 36,
+    justifyContent: "center",
+    width: 36,
+  },
+  checkboxActive: {
+    backgroundColor: colors.success,
+    borderColor: colors.success,
+  },
   weekHeader: {
     gap: spacing.md,
   },
@@ -237,6 +314,9 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     justifyContent: "space-between",
     padding: spacing.md,
+  },
+  courseCardCompleted: {
+    backgroundColor: colors.success,
   },
   courseBody: {
     flex: 1,
