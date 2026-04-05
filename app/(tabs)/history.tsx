@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
   formatDurationFromSeconds,
@@ -37,7 +37,20 @@ export default function HistoryScreen() {
       ) : (
         <View style={styles.list}>
           {completedCourses.map(({ course, program, weekIndex }) => (
-            <View key={course.id} style={styles.card}>
+            <Pressable
+              key={course.id}
+              onPress={() =>
+                router.push({
+                  pathname: "/course",
+                  params: {
+                    programId: program.id,
+                    weekIndex: String(weekIndex),
+                    courseId: course.id,
+                  },
+                })
+              }
+              style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+            >
               <View style={styles.cardBody}>
                 <Text style={styles.cardTitle}>{course.name}</Text>
                 <Text style={styles.cardMeta}>
@@ -47,22 +60,7 @@ export default function HistoryScreen() {
                   {formatDurationFromSeconds(getCourseDurationSeconds(course))}
                 </Text>
               </View>
-              <Text
-                onPress={() =>
-                  router.push({
-                    pathname: "/course",
-                    params: {
-                      programId: program.id,
-                      weekIndex: String(weekIndex),
-                      courseId: course.id,
-                    },
-                  })
-                }
-                style={styles.openLink}
-              >
-                Open
-              </Text>
-            </View>
+            </Pressable>
           ))}
         </View>
       )}
@@ -133,9 +131,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 14,
   },
-  openLink: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: "700",
+  pressed: {
+    opacity: 0.85,
   },
 });

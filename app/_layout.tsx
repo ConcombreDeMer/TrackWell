@@ -39,7 +39,11 @@ export default function RootLayout() {
           name="course-create"
           options={{ title: "Create Course", headerShown: false }}
         />
-        <Stack.Screen name="chrono" options={{ title: "Chrono" }} />
+        <Stack.Screen name="chrono" options={{ title: "Chrono", headerShown: false }} />
+        <Stack.Screen
+          name="end-course"
+          options={{ title: "End Course", headerShown: false }}
+        />
         <Stack.Screen name="settings" options={{ title: "Settings" }} />
       </Stack>
     </ProgramsStoreProvider>

@@ -1,6 +1,6 @@
 import { createContext, PropsWithChildren, useContext, useMemo, useState } from "react";
 
-import { CreateCourseInput, Program, ProgramDraft } from "./types";
+import { CourseFeedback, CreateCourseInput, Program, ProgramDraft } from "./types";
 import {
   createCourse,
   createDraftFromProgram,
@@ -29,6 +29,12 @@ type ProgramsStoreValue = {
     courseId: string,
     completed: boolean,
   ) => void;
+  saveCourseFeedback: (
+    programId: string,
+    weekIndex: number,
+    courseId: string,
+    feedback: CourseFeedback,
+  ) => void;
   updateCourseInProgram: (programId: string, input: CreateCourseInput & { courseId: string }) => void;
   deleteCourseFromProgram: (programId: string, weekIndex: number, courseId: string) => void;
   getProgramById: (programId: string) => Program | undefined;
@@ -41,6 +47,68 @@ export function ProgramsStoreProvider({ children }: PropsWithChildren) {
   const [programs, setPrograms] = useState<Program[]>([]);
   const [selectedProgramId, setSelectedProgramId] = useState<string | undefined>(undefined);
   const [programDraft, setProgramDraft] = useState<ProgramDraft>(createInitialProgramDraft);
+
+  function setCourseCompletedInPrograms(
+    programId: string,
+    weekIndex: number,
+    courseId: string,
+    completed: boolean,
+  ) {
+    setPrograms((current) =>
+      current.map((program) =>
+        program.id === programId
+          ? {
+              ...program,
+              weeks: program.weeks.map((week) =>
+                week.index === weekIndex
+                  ? {
+                      ...week,
+                      courses: week.courses.map((course) =>
+                        course.id === courseId
+                          ? {
+                              ...course,
+                              completed,
+                              feedback: completed ? course.feedback : undefined,
+                            }
+                          : course,
+                      ),
+                    }
+                  : week,
+              ),
+            }
+          : program,
+      ),
+    );
+  }
+
+  function saveCourseFeedbackInPrograms(
+    programId: string,
+    weekIndex: number,
+    courseId: string,
+    feedback: CourseFeedback,
+  ) {
+    setPrograms((current) =>
+      current.map((program) =>
+        program.id === programId
+          ? {
+              ...program,
+              weeks: program.weeks.map((week) =>
+                week.index === weekIndex
+                  ? {
+                      ...week,
+                      courses: week.courses.map((course) =>
+                        course.id === courseId
+                          ? { ...course, completed: true, feedback }
+                          : course,
+                      ),
+                    }
+                  : week,
+              ),
+            }
+          : program,
+      ),
+    );
+  }
 
   const value = useMemo<ProgramsStoreValue>(() => {
     return {
@@ -78,6 +146,7 @@ export function ProgramsStoreProvider({ children }: PropsWithChildren) {
             const nextCourse = {
               ...baseCourse,
               completed: existingCourse?.completed ?? baseCourse.completed,
+              feedback: existingCourse?.feedback,
               id: existingCourse?.id ?? baseCourse.id,
               name:
                 existingCourse?.name ??
@@ -114,6 +183,7 @@ export function ProgramsStoreProvider({ children }: PropsWithChildren) {
             const nextCourse = {
               ...baseCourse,
               completed: existingCourse.completed,
+              feedback: existingCourse.feedback,
               id: existingCourse.id,
               name: existingCourse.name,
             };
@@ -178,25 +248,10 @@ export function ProgramsStoreProvider({ children }: PropsWithChildren) {
         setSelectedProgramId(programId);
       },
       setCourseCompleted(programId, weekIndex, courseId, completed) {
-        setPrograms((current) =>
-          current.map((program) =>
-            program.id === programId
-              ? {
-                  ...program,
-                  weeks: program.weeks.map((week) =>
-                    week.index === weekIndex
-                      ? {
-                          ...week,
-                          courses: week.courses.map((course) =>
-                            course.id === courseId ? { ...course, completed } : course,
-                          ),
-                        }
-                      : week,
-                  ),
-                }
-              : program,
-          ),
-        );
+        setCourseCompletedInPrograms(programId, weekIndex, courseId, completed);
+      },
+      saveCourseFeedback(programId, weekIndex, courseId, feedback) {
+        saveCourseFeedbackInPrograms(programId, weekIndex, courseId, feedback);
       },
       updateCourseInProgram(programId, input) {
         setPrograms((current) =>
@@ -222,6 +277,7 @@ export function ProgramsStoreProvider({ children }: PropsWithChildren) {
                 const nextCourse = {
                   ...baseCourse,
                   completed: existingCourse.completed,
+                  feedback: existingCourse.feedback,
                   id: existingCourse.id,
                   name: existingCourse.name,
                 };

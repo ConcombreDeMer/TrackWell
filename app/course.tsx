@@ -111,12 +111,57 @@ export default function CourseScreen() {
       return;
     }
 
-    setCourseCompleted(
-      programId,
-      Number(weekIndex),
-      selectedSource.course.id,
-      !selectedSource.course.completed,
-    );
+    if (selectedSource.course.completed) {
+      Alert.alert(
+        "Mark course as incomplete?",
+        "This will remove the data from the previous completion, including difficulty, pain, and feeling.",
+        [
+          { style: "cancel", text: "Cancel" },
+          {
+            style: "destructive",
+            text: "Continue",
+            onPress: () => {
+              setCourseCompleted(programId, Number(weekIndex), selectedSource.course.id, false);
+            },
+          },
+        ],
+      );
+
+      return;
+    }
+
+    setCourseCompleted(programId, Number(weekIndex), selectedSource.course.id, true);
+  }
+
+  function handleRetry() {
+    if (!programId) {
+      return;
+    }
+
+    router.replace({
+      pathname: "/chrono",
+      params: {
+        courseId: selectedSource.course.id,
+        programId,
+        weekIndex: String(Number(weekIndex)),
+      },
+    });
+  }
+
+  function handleEditFeedback() {
+    if (!programId) {
+      return;
+    }
+
+    router.push({
+      pathname: "/end-course",
+      params: {
+        courseId: selectedSource.course.id,
+        edit: "true",
+        programId,
+        weekIndex: String(Number(weekIndex)),
+      },
+    });
   }
 
   return (
@@ -127,7 +172,7 @@ export default function CourseScreen() {
         <View style={styles.header}>
           <View style={styles.headerText}>
             <Text style={styles.title}>{selectedSource.course.name}</Text>
-            <Text style={styles.subtitle}>de {selectedSource.programName}</Text>
+            <Text style={styles.subtitle}>from {selectedSource.programName}</Text>
           </View>
           <CloseButton onPress={() => router.back()} />
         </View>
@@ -145,6 +190,56 @@ export default function CourseScreen() {
         </View>
 
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          {!isDraftFlow && selectedSource.course.feedback ? (
+            <View style={styles.feedbackWrap}>
+              <View style={styles.feedbackTopRow}>
+                <View style={styles.completedBadge}>
+                  <Text style={styles.completedBadgeText}>Done</Text>
+                  <Ionicons color={colors.surface} name="checkmark" size={24} />
+                </View>
+                <View style={styles.feedbackActions}>
+                  <Pressable
+                    onPress={handleEditFeedback}
+                    style={({ pressed }) => [styles.iconSquare, pressed && styles.pressed]}
+                  >
+                    <Ionicons color="#7A7A7A" name="create-outline" size={26} />
+                  </Pressable>
+                  <Pressable
+                    onPress={handleRetry}
+                    style={({ pressed }) => [styles.iconSquare, pressed && styles.pressed]}
+                  >
+                    <Ionicons color="#7A7A7A" name="refresh" size={28} />
+                  </Pressable>
+                </View>
+              </View>
+
+              <View style={styles.feedbackCard}>
+                <FeedbackRow
+                  label="Date"
+                  value={formatFeedbackDate(selectedSource.course.feedback.completedAt)}
+                />
+                <FeedbackRow
+                  badge
+                  badgeTone={getDifficultyTone(selectedSource.course.feedback.difficulty)}
+                  label="Difficulty"
+                  value={formatDifficulty(selectedSource.course.feedback.difficulty)}
+                />
+                <FeedbackRow
+                  badge
+                  badgeTone={getPainTone(selectedSource.course.feedback.pain)}
+                  label="Pain"
+                  value={formatPain(selectedSource.course.feedback.pain)}
+                />
+                <View style={styles.feedbackNotes}>
+                  <Text style={styles.feedbackNotesTitle}>Feeling</Text>
+                  <Text style={styles.feedbackNotesText}>
+                    {selectedSource.course.feedback.feeling || "-"}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          ) : null}
+
           <View style={styles.card}>
             {groups.map((group, index) => (
               <View key={group.key}>
@@ -161,6 +256,133 @@ export default function CourseScreen() {
       </View>
     </View>
   );
+}
+
+function FeedbackRow({
+  badge = false,
+  badgeTone = "neutral",
+  label,
+  value,
+}: {
+  badge?: boolean;
+  badgeTone?: "green" | "yellow" | "orange" | "red" | "neutral";
+  label: string;
+  value: string;
+}) {
+  const badgeStyle = getFeedbackBadgeStyle(badgeTone);
+
+  return (
+    <View style={styles.feedbackRow}>
+      <Text style={styles.feedbackLabel}>{label}</Text>
+      {badge ? (
+        <View style={[styles.feedbackBadge, { backgroundColor: badgeStyle.backgroundColor }]}>
+          <Text style={[styles.feedbackBadgeText, { color: badgeStyle.textColor }]}>{value}</Text>
+        </View>
+      ) : (
+        <Text style={styles.feedbackValue}>{value}</Text>
+      )}
+    </View>
+  );
+}
+
+function getFeedbackBadgeStyle(tone: "green" | "yellow" | "orange" | "red" | "neutral") {
+  switch (tone) {
+    case "green":
+      return {
+        backgroundColor: "#9AC29B",
+        textColor: "#FFFFFF",
+      };
+    case "yellow":
+      return {
+        backgroundColor: "#E3C66D",
+        textColor: "#3D3312",
+      };
+    case "orange":
+      return {
+        backgroundColor: "#E4A35A",
+        textColor: "#FFFFFF",
+      };
+    case "red":
+      return {
+        backgroundColor: "#D96B6B",
+        textColor: "#FFFFFF",
+      };
+    default:
+      return {
+        backgroundColor: "#D9D9D9",
+        textColor: colors.text,
+      };
+  }
+}
+
+function formatFeedbackDate(value: string) {
+  const date = new Date(value);
+
+  return date.toLocaleDateString("fr-FR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit",
+  });
+}
+
+function formatDifficulty(value: string) {
+  switch (value) {
+    case "easy":
+      return "Easy";
+    case "medium":
+      return "Medium";
+    case "hard":
+      return "Hard";
+    case "extra-hard":
+      return "Extra hard";
+    default:
+      return value;
+  }
+}
+
+function formatPain(value: string) {
+  switch (value) {
+    case "none":
+      return "None";
+    case "medium":
+      return "Medium";
+    case "high":
+      return "High";
+    case "very-high":
+      return "Very high";
+    default:
+      return value;
+  }
+}
+
+function getDifficultyTone(value: string): "green" | "yellow" | "orange" | "red" {
+  switch (value) {
+    case "easy":
+      return "green";
+    case "medium":
+      return "yellow";
+    case "hard":
+      return "orange";
+    case "extra-hard":
+      return "red";
+    default:
+      return "yellow";
+  }
+}
+
+function getPainTone(value: string): "green" | "yellow" | "orange" | "red" {
+  switch (value) {
+    case "none":
+      return "green";
+    case "medium":
+      return "yellow";
+    case "high":
+      return "orange";
+    case "very-high":
+      return "red";
+    default:
+      return "yellow";
+  }
 }
 
 function ActionPill({
@@ -303,7 +525,7 @@ function groupCourseSteps(steps: Course["steps"]): CourseStepGroup[] {
 
 function CourseStepRow({ step }: { step: Course["steps"][number] }) {
   const iconName = step.type === "walk" ? "walk-outline" : "flash-outline";
-  const label = step.type === "walk" ? "marche" : "course";
+  const label = step.type === "walk" ? "walk" : "run";
 
   return (
     <View style={styles.stepRow}>
@@ -427,6 +649,88 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingBottom: 40,
+  },
+  feedbackWrap: {
+    gap: spacing.md,
+    marginBottom: spacing.xl,
+  },
+  feedbackTopRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  feedbackActions: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  completedBadge: {
+    alignItems: "center",
+    backgroundColor: colors.primaryGradientStart,
+    borderRadius: radius.md,
+    flexDirection: "row",
+    gap: spacing.sm,
+    minHeight: 58,
+    paddingHorizontal: spacing.lg,
+  },
+  completedBadgeText: {
+    color: colors.surface,
+    fontSize: 17,
+    fontWeight: "700",
+  },
+  iconSquare: {
+    alignItems: "center",
+    backgroundColor: "#E4E4E4",
+    borderColor: "#D0D0D0",
+    borderRadius: radius.md,
+    borderWidth: 1,
+    height: 58,
+    justifyContent: "center",
+    width: 66,
+  },
+  feedbackCard: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 24,
+    borderWidth: 1,
+    gap: spacing.md,
+    padding: spacing.lg,
+  },
+  feedbackRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  feedbackLabel: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  feedbackValue: {
+    color: colors.textMuted,
+    fontSize: 18,
+  },
+  feedbackBadge: {
+    borderRadius: 12,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  feedbackBadgeText: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  feedbackNotes: {
+    gap: spacing.md,
+    marginTop: spacing.sm,
+  },
+  feedbackNotesTitle: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  feedbackNotesText: {
+    color: colors.textMuted,
+    fontSize: 16,
+    lineHeight: 22,
   },
   card: {
     backgroundColor: colors.surface,

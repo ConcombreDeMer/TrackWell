@@ -1,5 +1,14 @@
 export type StepType = "walk" | "run";
 export type DayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+export type DifficultyLevel = "easy" | "medium" | "hard" | "extra-hard";
+export type PainLevel = "none" | "medium" | "high" | "very-high";
+
+export interface CourseFeedback {
+  completedAt: string;
+  difficulty: DifficultyLevel;
+  pain: PainLevel;
+  feeling: string;
+}
 
 export interface Step {
   id: string;
@@ -11,6 +20,7 @@ export interface Course {
   id: string;
   name: string;
   completed: boolean;
+  feedback?: CourseFeedback;
   dayOfWeek: DayOfWeek;
   steps: Step[];
 }

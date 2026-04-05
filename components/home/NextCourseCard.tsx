@@ -6,16 +6,16 @@ import { colors, radius, spacing } from "../../theme";
 
 type NextCourseCardProps = {
   course: Course;
-  onPress: () => void;
+  onPlayPress: () => void;
   program: Program;
   weekIndex: number;
 };
 
-export function NextCourseCard({ course, onPress, weekIndex }: NextCourseCardProps) {
+export function NextCourseCard({ course, onPlayPress, weekIndex }: NextCourseCardProps) {
   return (
     <View style={styles.wrapper}>
       <Text style={styles.heading}>Prochaine course</Text>
-      <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
+      <View style={styles.card}>
         <View style={styles.textBlock}>
           <Text style={styles.title}>
             Semaine {weekIndex} - {course.name}
@@ -24,10 +24,13 @@ export function NextCourseCard({ course, onPress, weekIndex }: NextCourseCardPro
             {formatDurationFromSeconds(getCourseDurationSeconds(course))}
           </Text>
         </View>
-        <View style={styles.iconBox}>
-          <Ionicons color={colors.surface} name="chevron-forward" size={28} />
-        </View>
-      </Pressable>
+        <Pressable
+          onPress={onPlayPress}
+          style={({ pressed }) => [styles.iconBox, pressed && styles.pressed]}
+        >
+          <Ionicons color={colors.surface} name="play" size={24} />
+        </Pressable>
+      </View>
     </View>
   );
 }
