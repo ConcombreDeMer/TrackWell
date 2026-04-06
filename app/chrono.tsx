@@ -33,6 +33,7 @@ export default function ChronoScreen() {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [remainingSeconds, setRemainingSeconds] = useState(course?.steps[0]?.durationSeconds ?? 0);
   const [progressTrackWidth, setProgressTrackWidth] = useState(0);
+  const [hasFinished, setHasFinished] = useState(false);
   const hasCompletedRef = useRef(false);
   const progressAnim = useRef(new Animated.Value(0)).current;
   const currentStepIntroAnim = useRef(new Animated.Value(1)).current;
@@ -43,34 +44,21 @@ export default function ChronoScreen() {
     }
 
     const timeoutId = setTimeout(() => {
-      setRemainingSeconds((current) => {
-        if (current > 1) {
-          return current - 1;
-        }
+      if (remainingSeconds > 1) {
+        setRemainingSeconds((current) => current - 1);
+        return;
+      }
 
-        const nextStep = course.steps[currentStepIndex + 1];
+      const nextStep = course.steps[currentStepIndex + 1];
 
-        if (nextStep) {
-          setCurrentStepIndex((index) => index + 1);
-          return nextStep.durationSeconds;
-        }
+      if (nextStep) {
+        setCurrentStepIndex((index) => index + 1);
+        return;
+      }
 
-        if (program && week && !hasCompletedRef.current) {
-          hasCompletedRef.current = true;
-          setCourseCompleted(program.id, week.index, course.id, true);
-          setIsRunning(false);
-          router.replace({
-            pathname: "/end-course",
-            params: {
-              courseId: course.id,
-              programId: program.id,
-              weekIndex: String(week.index),
-            },
-          });
-        }
-
-        return 0;
-      });
+      setRemainingSeconds(0);
+      setIsRunning(false);
+      setHasFinished(true);
     }, 1000);
 
     return () => clearTimeout(timeoutId);
@@ -84,6 +72,23 @@ export default function ChronoScreen() {
     setCourseCompleted,
     week,
   ]);
+
+  useEffect(() => {
+    if (!hasFinished || !program || !week || !course || hasCompletedRef.current) {
+      return;
+    }
+
+    hasCompletedRef.current = true;
+    setCourseCompleted(program.id, week.index, course.id, true);
+    router.replace({
+      pathname: "/end-course",
+      params: {
+        courseId: course.id,
+        programId: program.id,
+        weekIndex: String(week.index),
+      },
+    });
+  }, [course, hasFinished, program, router, setCourseCompleted, week]);
 
   useEffect(() => {
     if (!course) {
