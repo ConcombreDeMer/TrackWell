@@ -5,6 +5,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-nati
 
 import { BackButton } from "../components/navigation/BackButton";
 import { ProgramDraftCalendar } from "../components/programs/ProgramDraftCalendar";
+import { ProgramActionsMenu } from "../components/programs/ProgramActionsMenu";
 import {
   formatDurationFromSeconds,
   getCourseDurationSeconds,
@@ -93,7 +94,10 @@ export default function ProgramScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.content} style={styles.screen}>
-      <BackButton />
+      <View style={styles.topBar}>
+        <BackButton />
+        <ProgramActionsMenu onDelete={handleDeleteProgram} onEdit={handleEditProgram} />
+      </View>
       <SectionCard>
         <Text style={styles.title}>{selectedProgram.name}</Text>
         <Text style={styles.description}>{selectedProgram.description || "No description yet."}</Text>
@@ -109,8 +113,6 @@ export default function ProgramScreen() {
           onPress={handleSelectProgram}
           variant={isSelectedProgram ? "success" : "primary"}
         />
-        <PrimaryButton label="Edit Program" onPress={handleEditProgram} />
-        <PrimaryButton label="Delete Program" onPress={handleDeleteProgram} variant="secondary" />
       </View>
 
       <ProgramDraftCalendar
@@ -223,6 +225,11 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
     padding: spacing.xl,
     paddingBottom: 48,
+  },
+  topBar: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   title: {
     color: colors.text,

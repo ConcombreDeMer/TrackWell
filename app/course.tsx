@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 
+import { CourseActionsMenu } from "../components/course/CourseActionsMenu";
 import {
   Course,
   Program,
@@ -175,19 +176,15 @@ export default function CourseScreen() {
             <Text style={styles.title}>{selectedSource.course.name}</Text>
             <Text style={styles.subtitle}>from {selectedSource.programName}</Text>
           </View>
-          <CloseButton onPress={() => router.back()} />
-        </View>
-
-        <View style={styles.actionRow}>
-          <ActionPill label="Edit" onPress={handleEdit} />
-          <ActionPill destructive label="Delete" onPress={handleDelete} />
-          {!isDraftFlow ? (
-            <ActionPill
-              emphasis={selectedSource.course.completed ? "success" : "default"}
-              label={selectedSource.course.completed ? "Completed" : "Mark Complete"}
-              onPress={handleToggleCompletion}
+          <View style={styles.headerActions}>
+            <CourseActionsMenu
+              isCompleted={selectedSource.course.completed}
+              onDelete={handleDelete}
+              onEdit={handleEdit}
+              onToggleCompletion={!isDraftFlow ? handleToggleCompletion : undefined}
             />
-          ) : null}
+            <CloseButton onPress={() => router.back()} />
+          </View>
         </View>
 
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -386,35 +383,6 @@ function getPainTone(value: string): "green" | "yellow" | "orange" | "red" {
   }
 }
 
-function ActionPill({
-  emphasis = "default",
-  destructive = false,
-  label,
-  onPress,
-}: {
-  emphasis?: "default" | "success";
-  destructive?: boolean;
-  label: string;
-  onPress: () => void;
-}) {
-  return (
-    <SquircleButton
-      onPress={onPress}
-      style={[styles.actionPill, emphasis === "success" && styles.actionPillSuccess]}
-    >
-      <Text
-        style={[
-          styles.actionPillLabel,
-          destructive && styles.actionPillLabelDestructive,
-          emphasis === "success" && styles.actionPillLabelSuccess,
-        ]}
-      >
-        {label}
-      </Text>
-    </SquircleButton>
-  );
-}
-
 function getCourseSource({
   courseId,
   isDraftFlow,
@@ -591,6 +559,10 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingTop: spacing.sm,
   },
+  headerActions: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
   title: {
     color: colors.text,
     fontSize: 28,
@@ -613,36 +585,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 16,
     width: 52,
-  },
-  actionRow: {
-    flexDirection: "row",
-    gap: spacing.sm,
-    marginBottom: spacing.lg,
-  },
-  actionPill: {
-    alignItems: "center",
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    justifyContent: "center",
-    minHeight: 42,
-    paddingHorizontal: spacing.lg,
-  },
-  actionPillSuccess: {
-    backgroundColor: colors.success,
-    borderColor: colors.success,
-  },
-  actionPillLabel: {
-    color: colors.text,
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  actionPillLabelDestructive: {
-    color: "#A33B3B",
-  },
-  actionPillLabelSuccess: {
-    color: colors.text,
   },
   content: {
     paddingBottom: 40,
