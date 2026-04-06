@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
   Course,
@@ -10,6 +10,7 @@ import {
   useProgramsStore,
 } from "../features/programs";
 import { colors, radius, spacing } from "../theme";
+import { SquircleButton, SquircleView } from "../ui/Squircle";
 
 type CourseStepGroup =
   | {
@@ -192,28 +193,28 @@ export default function CourseScreen() {
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           {!isDraftFlow && selectedSource.course.feedback ? (
             <View style={styles.feedbackWrap}>
-              <View style={styles.feedbackTopRow}>
-                <View style={styles.completedBadge}>
+            <View style={styles.feedbackTopRow}>
+                <SquircleView style={styles.completedBadge}>
                   <Text style={styles.completedBadgeText}>Done</Text>
                   <Ionicons color={colors.surface} name="checkmark" size={24} />
-                </View>
+                </SquircleView>
                 <View style={styles.feedbackActions}>
-                  <Pressable
+                  <SquircleButton
                     onPress={handleEditFeedback}
-                    style={({ pressed }) => [styles.iconSquare, pressed && styles.pressed]}
+                    style={styles.iconSquare}
                   >
                     <Ionicons color="#7A7A7A" name="create-outline" size={26} />
-                  </Pressable>
-                  <Pressable
+                  </SquircleButton>
+                  <SquircleButton
                     onPress={handleRetry}
-                    style={({ pressed }) => [styles.iconSquare, pressed && styles.pressed]}
+                    style={styles.iconSquare}
                   >
                     <Ionicons color="#7A7A7A" name="refresh" size={28} />
-                  </Pressable>
+                  </SquircleButton>
                 </View>
               </View>
 
-              <View style={styles.feedbackCard}>
+              <SquircleView style={styles.feedbackCard}>
                 <FeedbackRow
                   label="Date"
                   value={formatFeedbackDate(selectedSource.course.feedback.completedAt)}
@@ -236,11 +237,11 @@ export default function CourseScreen() {
                     {selectedSource.course.feedback.feeling || "-"}
                   </Text>
                 </View>
-              </View>
+              </SquircleView>
             </View>
           ) : null}
 
-          <View style={styles.card}>
+          <SquircleView style={styles.card}>
             {groups.map((group, index) => (
               <View key={group.key}>
                 {group.kind === "single" ? (
@@ -251,7 +252,7 @@ export default function CourseScreen() {
                 {index < groups.length - 1 ? <View style={styles.connector} /> : null}
               </View>
             ))}
-          </View>
+          </SquircleView>
         </ScrollView>
       </View>
     </View>
@@ -275,9 +276,9 @@ function FeedbackRow({
     <View style={styles.feedbackRow}>
       <Text style={styles.feedbackLabel}>{label}</Text>
       {badge ? (
-        <View style={[styles.feedbackBadge, { backgroundColor: badgeStyle.backgroundColor }]}>
+        <SquircleView style={[styles.feedbackBadge, { backgroundColor: badgeStyle.backgroundColor }]}>
           <Text style={[styles.feedbackBadgeText, { color: badgeStyle.textColor }]}>{value}</Text>
-        </View>
+        </SquircleView>
       ) : (
         <Text style={styles.feedbackValue}>{value}</Text>
       )}
@@ -397,13 +398,9 @@ function ActionPill({
   onPress: () => void;
 }) {
   return (
-    <Pressable
+    <SquircleButton
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.actionPill,
-        emphasis === "success" && styles.actionPillSuccess,
-        pressed && styles.pressed,
-      ]}
+      style={[styles.actionPill, emphasis === "success" && styles.actionPillSuccess]}
     >
       <Text
         style={[
@@ -414,7 +411,7 @@ function ActionPill({
       >
         {label}
       </Text>
-    </Pressable>
+    </SquircleButton>
   );
 }
 
@@ -545,19 +542,19 @@ function RepeatedPairBlock({
   steps: [Course["steps"][number], Course["steps"][number]];
 }) {
   return (
-    <View style={styles.repeatBlock}>
+    <SquircleView style={styles.repeatBlock}>
       <Text style={styles.repeatCount}>x{repeatCount}</Text>
       <CourseStepRow step={steps[0]} />
       <CourseStepRow step={steps[1]} />
-    </View>
+    </SquircleView>
   );
 }
 
 function CloseButton({ onPress }: { onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}>
+    <SquircleButton onPress={onPress} style={styles.closeButton}>
       <Ionicons color={colors.text} name="close" size={26} />
-    </Pressable>
+    </SquircleButton>
   );
 }
 
@@ -773,8 +770,5 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: spacing.md,
     top: spacing.md,
-  },
-  pressed: {
-    opacity: 0.85,
   },
 });

@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { colors, radius, spacing } from "../../theme";
+import { SquircleView } from "../../ui/Squircle";
 
 type PlaceholderScreenProps = {
   title: string;
@@ -21,10 +22,10 @@ export function PlaceholderScreen({
   return (
     <ScrollView contentContainerStyle={styles.content} style={styles.screen}>
       {headerSlot}
-      <View style={styles.card}>
+      <SquircleView style={styles.card}>
         <Text style={styles.title}>{title}</Text>
         <Text style={styles.description}>{description}</Text>
-      </View>
+      </SquircleView>
       <View style={styles.actions}>{children}</View>
       {footer}
     </ScrollView>

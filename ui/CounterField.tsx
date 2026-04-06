@@ -1,6 +1,7 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 import { colors, radius, spacing } from "../theme";
+import { SquircleButton, SquircleView } from "./Squircle";
 
 type CounterFieldProps = {
   label: string;
@@ -20,7 +21,7 @@ export function CounterField({
   return (
     <View style={styles.wrapper}>
       <Text style={styles.label}>{label}</Text>
-      <View style={styles.controls}>
+      <SquircleView style={styles.controls}>
         <CounterButton
           disabled={value <= min}
           label="-"
@@ -32,7 +33,7 @@ export function CounterField({
           label="+"
           onPress={() => onChange(Math.min(max, value + 1))}
         />
-      </View>
+      </SquircleView>
     </View>
   );
 }
@@ -45,17 +46,13 @@ type CounterButtonProps = {
 
 function CounterButton({ label, onPress, disabled }: CounterButtonProps) {
   return (
-    <Pressable
+    <SquircleButton
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.button,
-        disabled && styles.buttonDisabled,
-        pressed && !disabled && styles.buttonPressed,
-      ]}
+      style={[styles.button, disabled && styles.buttonDisabled]}
     >
       <Text style={[styles.buttonLabel, disabled && styles.buttonLabelDisabled]}>{label}</Text>
-    </Pressable>
+    </SquircleButton>
   );
 }
 
@@ -89,9 +86,6 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.45,
-  },
-  buttonPressed: {
-    opacity: 0.8,
   },
   buttonLabel: {
     color: colors.text,

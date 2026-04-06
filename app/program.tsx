@@ -16,6 +16,7 @@ import {
 import { colors, radius, spacing } from "../theme";
 import { PrimaryButton } from "../ui/PrimaryButton";
 import { SectionCard } from "../ui/SectionCard";
+import { SquircleButton, SquircleView } from "../ui/Squircle";
 
 export default function ProgramScreen() {
   const router = useRouter();
@@ -135,14 +136,14 @@ export default function ProgramScreen() {
         titleSlot={
           <Pressable
             onPress={() => setShowCompleted((current) => !current)}
-            style={({ pressed }) => [styles.checkboxRow, pressed && styles.pressed]}
+            style={styles.checkboxRow}
           >
             <Text style={styles.checkboxLabel}>Completed</Text>
-            <View style={[styles.checkbox, showCompleted && styles.checkboxActive]}>
+            <SquircleView style={[styles.checkbox, showCompleted && styles.checkboxActive]}>
               {showCompleted ? (
                 <Ionicons color={colors.text} name="checkmark" size={18} />
               ) : null}
-            </View>
+            </SquircleView>
           </Pressable>
         }
       />
@@ -161,15 +162,15 @@ export default function ProgramScreen() {
           </View>
 
           {week.courses.length === 0 ? (
-            <View style={styles.emptyCourseState}>
+            <SquircleView style={styles.emptyCourseState}>
               <Text style={styles.emptyCourseText}>
                 Add the first course for this week to start building the plan.
               </Text>
-            </View>
+            </SquircleView>
           ) : (
             <View style={styles.courseList}>
               {week.courses.map((course, index) => (
-                <Pressable
+                <SquircleButton
                   key={course.id}
                   onPress={() =>
                     router.push({
@@ -181,10 +182,9 @@ export default function ProgramScreen() {
                         },
                     })
                   }
-                  style={({ pressed }) => [
+                  style={[
                     styles.courseCard,
                     course.completed && styles.courseCardCompleted,
-                    pressed && styles.pressed,
                   ]}
                 >
                   <View style={styles.courseBody}>
@@ -194,7 +194,7 @@ export default function ProgramScreen() {
                       {formatDurationFromSeconds(getCourseDurationSeconds(course))}
                     </Text>
                   </View>
-                </Pressable>
+                </SquircleButton>
               ))}
             </View>
           )}
@@ -330,8 +330,5 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 14,
     marginTop: 4,
-  },
-  pressed: {
-    opacity: 0.9,
   },
 });

@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Easing,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -14,6 +13,7 @@ import {
 import { BackButton } from "../components/navigation/BackButton";
 import { formatDurationFromSeconds, useProgramsStore } from "../features/programs";
 import { colors, radius, spacing } from "../theme";
+import { SquircleButton, SquircleView } from "../ui/Squircle";
 
 export default function ChronoScreen() {
   const router = useRouter();
@@ -142,12 +142,12 @@ export default function ChronoScreen() {
     return (
       <ScrollView contentContainerStyle={styles.content} style={styles.screen}>
         <BackButton />
-        <View style={styles.fallbackCard}>
+        <SquircleView style={styles.fallbackCard}>
           <Text style={styles.fallbackTitle}>Chrono unavailable</Text>
           <Text style={styles.fallbackText}>
             The selected course could not be loaded. Return to Home and launch a valid next course.
           </Text>
-        </View>
+        </SquircleView>
       </ScrollView>
     );
   }
@@ -166,21 +166,21 @@ export default function ChronoScreen() {
         </View>
       </View>
 
-      <View style={styles.timerCard}>
+      <SquircleView style={styles.timerCard}>
         <View>
           <Text style={styles.timerLabel}>Timer</Text>
           <Text style={styles.timerValue}>{formatClock(remainingSeconds)}</Text>
         </View>
 
-        <Pressable
+        <SquircleButton
           onPress={() => setIsRunning((current) => !current)}
-          style={({ pressed }) => [styles.pauseButton, pressed && styles.pressed]}
+          style={styles.pauseButton}
         >
           <Ionicons color={colors.surface} name={isRunning ? "pause" : "play"} size={46} />
-        </Pressable>
-      </View>
+        </SquircleButton>
+      </SquircleView>
 
-      <View style={styles.timelineCard}>
+      <SquircleView style={styles.timelineCard}>
         {course.steps.map((step, index) => {
           const isPast = index < currentStepIndex;
           const isCurrent = index === currentStepIndex;
@@ -196,7 +196,7 @@ export default function ChronoScreen() {
                     {formatDurationFromSeconds(activeStep.durationSeconds)} - {label}
                   </Text>
                 </View>
-                <Animated.View
+                <AnimatedSquircleView
                   style={[
                     styles.currentProgressCard,
                     {
@@ -243,7 +243,7 @@ export default function ChronoScreen() {
                       ]}
                     />
                   </View>
-                </Animated.View>
+                </AnimatedSquircleView>
               </View>
             );
           }
@@ -261,10 +261,12 @@ export default function ChronoScreen() {
             </View>
           );
         })}
-      </View>
+      </SquircleView>
     </ScrollView>
   );
 }
+
+const AnimatedSquircleView = Animated.createAnimatedComponent(SquircleView);
 
 function formatClock(totalSeconds: number) {
   const minutes = Math.floor(totalSeconds / 60);
@@ -406,8 +408,5 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 15,
     lineHeight: 22,
-  },
-  pressed: {
-    opacity: 0.9,
   },
 });

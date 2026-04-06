@@ -5,6 +5,7 @@ import { ProgramSummaryCard } from "../../components/programs/ProgramSummaryCard
 import { useProgramsStore } from "../../features/programs";
 import { colors, spacing } from "../../theme";
 import { ActionCardButton } from "../../ui/ActionCardButton";
+import { SquircleView } from "../../ui/Squircle";
 
 export default function ProgramsScreen() {
   const router = useRouter();
@@ -29,12 +30,12 @@ export default function ProgramsScreen() {
 
       <View style={styles.list}>
         {programs.length === 0 ? (
-          <View style={styles.emptyState}>
+          <SquircleView style={styles.emptyState}>
             <Text style={styles.emptyTitle}>No programs yet</Text>
             <Text style={styles.emptyText}>
               Create your first running program to generate weeks, then add courses inside each week.
             </Text>
-          </View>
+          </SquircleView>
         ) : (
           programs.map((program) => (
             <ProgramSummaryCard

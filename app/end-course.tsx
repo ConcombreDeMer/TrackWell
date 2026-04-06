@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { BackButton } from "../components/navigation/BackButton";
 import {
@@ -11,15 +11,16 @@ import {
 import { colors, radius, spacing } from "../theme";
 import { PrimaryButton } from "../ui/PrimaryButton";
 import { SectionCard } from "../ui/SectionCard";
+import { SquircleButton, SquircleView } from "../ui/Squircle";
 
-const difficultyOptions: Array<{ label: string; value: DifficultyLevel }> = [
+const difficultyOptions: { label: string; value: DifficultyLevel }[] = [
   { label: "Easy", value: "easy" },
   { label: "Medium", value: "medium" },
   { label: "Hard", value: "hard" },
   { label: "Extra hard", value: "extra-hard" },
 ];
 
-const painOptions: Array<{ label: string; value: PainLevel }> = [
+const painOptions: { label: string; value: PainLevel }[] = [
   { label: "None", value: "none" },
   { label: "Medium", value: "medium" },
   { label: "High", value: "high" },
@@ -144,16 +145,12 @@ function ChoiceChip({
   onPress: () => void;
 }) {
   return (
-    <Pressable
+    <SquircleButton
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.chip,
-        active && styles.chipActive,
-        pressed && styles.pressed,
-      ]}
+      style={[styles.chip, active && styles.chipActive]}
     >
       <Text style={[styles.chipLabel, active && styles.chipLabelActive]}>{label}</Text>
-    </Pressable>
+    </SquircleButton>
   );
 }
 
@@ -165,14 +162,16 @@ function FeelingInput({
   value: string;
 }) {
   return (
-    <TextInput
-      multiline
-      onChangeText={onChangeText}
-      placeholder="Write a short note..."
-      placeholderTextColor={colors.textMuted}
-      style={styles.textArea}
-      value={value}
-    />
+    <SquircleView style={styles.textAreaShell}>
+      <TextInput
+        multiline
+        onChangeText={onChangeText}
+        placeholder="Write a short note..."
+        placeholderTextColor={colors.textMuted}
+        style={styles.textArea}
+        value={value}
+      />
+    </SquircleView>
   );
 }
 
@@ -227,9 +226,11 @@ const styles = StyleSheet.create({
   chipLabelActive: {
     color: colors.surface,
   },
-  textArea: {
+  textAreaShell: {
     backgroundColor: colors.surfaceMuted,
     borderRadius: radius.md,
+  },
+  textArea: {
     color: colors.text,
     minHeight: 90,
     paddingHorizontal: spacing.md,
@@ -240,8 +241,5 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 15,
     lineHeight: 22,
-  },
-  pressed: {
-    opacity: 0.9,
   },
 });

@@ -7,6 +7,7 @@ import { SelectedProgramCard } from "../../components/home/SelectedProgramCard";
 import { getNextCourse, useProgramsStore } from "../../features/programs";
 import { colors, spacing } from "../../theme";
 import { PrimaryButton } from "../../ui/PrimaryButton";
+import { SquircleView } from "../../ui/Squircle";
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -50,22 +51,22 @@ export default function HomeScreen() {
               weekIndex={nextCourse.weekIndex}
             />
           ) : (
-            <View style={styles.doneState}>
+            <SquircleView style={styles.doneState}>
               <Text style={styles.doneTitle}>All courses completed</Text>
               <Text style={styles.doneText}>
                 This selected program is fully completed. Great work.
               </Text>
-            </View>
+            </SquircleView>
           )}
         </>
       ) : (
-        <View style={styles.emptyState}>
+        <SquircleView style={styles.emptyState}>
           <Text style={styles.emptyTitle}>No selected program</Text>
           <Text style={styles.emptyText}>
             Select one program to pin it here and access it quickly from Home.
           </Text>
           <PrimaryButton label="Browse Programs" onPress={() => router.replace("/programs")} />
-        </View>
+        </SquircleView>
       )}
 
     </ScrollView>

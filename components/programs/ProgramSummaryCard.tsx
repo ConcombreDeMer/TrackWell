@@ -1,7 +1,8 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 import { Program, getProgramCompletion, getProgramCourseCount } from "../../features/programs";
 import { colors, radius, spacing } from "../../theme";
+import { SquircleButton, SquircleView } from "../../ui/Squircle";
 
 type ProgramSummaryCardProps = {
   isSelected?: boolean;
@@ -18,13 +19,13 @@ export function ProgramSummaryCard({
   const completion = getProgramCompletion(program);
 
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
+    <SquircleButton onPress={onPress} style={styles.card}>
       <View style={styles.header}>
         <Text style={styles.title}>{program.name}</Text>
         {isSelected ? (
-          <View style={styles.selectedTag}>
+          <SquircleView style={styles.selectedTag}>
             <Text style={styles.selectedTagText}>Selected</Text>
-          </View>
+          </SquircleView>
         ) : null}
       </View>
       <Text numberOfLines={2} style={styles.description}>
@@ -45,7 +46,7 @@ export function ProgramSummaryCard({
           <Text style={styles.statLabel}>Completion</Text>
         </View>
       </View>
-    </Pressable>
+    </SquircleButton>
   );
 }
 
@@ -57,9 +58,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: spacing.md,
     padding: spacing.lg,
-  },
-  pressed: {
-    opacity: 0.92,
   },
   header: {
     alignItems: "flex-start",

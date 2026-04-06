@@ -1,7 +1,8 @@
 import { LinearGradient } from "expo-linear-gradient";
-import { Pressable, StyleSheet, Text } from "react-native";
+import { StyleSheet, Text } from "react-native";
 
 import { colors, radius, spacing } from "../theme";
+import { SquircleButton } from "./Squircle";
 
 type PrimaryButtonProps = {
   label: string;
@@ -16,12 +17,11 @@ export function PrimaryButton({
 }: PrimaryButtonProps) {
   if (variant === "secondary" || variant === "success") {
     return (
-      <Pressable
+      <SquircleButton
         onPress={onPress}
-        style={({ pressed }) => [
+        style={[
           styles.secondary,
           variant === "success" && styles.success,
-          pressed && styles.pressed,
         ]}
       >
         <Text
@@ -32,15 +32,12 @@ export function PrimaryButton({
         >
           {label}
         </Text>
-      </Pressable>
+      </SquircleButton>
     );
   }
 
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [styles.wrapper, pressed && styles.pressed]}
-    >
+    <SquircleButton onPress={onPress} style={styles.wrapper}>
       <LinearGradient
         colors={[colors.primaryGradientStart, colors.primaryGradientEnd]}
         end={{ x: 1, y: 0 }}
@@ -49,7 +46,7 @@ export function PrimaryButton({
       >
         <Text style={styles.primaryLabel}>{label}</Text>
       </LinearGradient>
-    </Pressable>
+    </SquircleButton>
   );
 }
 
@@ -94,8 +91,5 @@ const styles = StyleSheet.create({
   successLabel: {
     color: colors.text,
     fontWeight: "700",
-  },
-  pressed: {
-    opacity: 0.92,
   },
 });

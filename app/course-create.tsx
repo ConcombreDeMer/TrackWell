@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { BackButton } from "../components/navigation/BackButton";
 import { DayOfWeek, StepType, getDayName, useProgramsStore } from "../features/programs";
@@ -8,6 +8,7 @@ import { colors, radius, spacing } from "../theme";
 import { CounterField } from "../ui/CounterField";
 import { PrimaryButton } from "../ui/PrimaryButton";
 import { SectionCard } from "../ui/SectionCard";
+import { SquircleButton } from "../ui/Squircle";
 
 type DraftStep = {
   id: string;
@@ -160,16 +161,16 @@ export default function CourseCreateScreen() {
         ) : (
           <View style={styles.stepsList}>
             {steps.map((step, index) => (
-              <Pressable
+              <SquircleButton
                 key={step.id}
                 onPress={() => setSteps((current) => current.filter((item) => item.id !== step.id))}
-                style={({ pressed }) => [styles.stepCard, pressed && styles.stepCardPressed]}
+                style={styles.stepCard}
               >
                 <Text style={styles.stepText}>
                   Step {index + 1} • {step.type} • {step.durationMinutes} min
                 </Text>
                 <Text style={styles.stepDelete}>Delete</Text>
-              </Pressable>
+              </SquircleButton>
             ))}
           </View>
         )}
@@ -188,16 +189,12 @@ type StepTypeButtonProps = {
 
 function StepTypeButton({ label, active, onPress }: StepTypeButtonProps) {
   return (
-    <Pressable
+    <SquircleButton
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.stepTypeButton,
-        active && styles.stepTypeButtonActive,
-        pressed && styles.stepTypeButtonPressed,
-      ]}
+      style={[styles.stepTypeButton, active && styles.stepTypeButtonActive]}
     >
       <Text style={[styles.stepTypeLabel, active && styles.stepTypeLabelActive]}>{label}</Text>
-    </Pressable>
+    </SquircleButton>
   );
 }
 
@@ -252,9 +249,6 @@ const styles = StyleSheet.create({
   stepTypeButtonActive: {
     backgroundColor: colors.success,
   },
-  stepTypeButtonPressed: {
-    opacity: 0.85,
-  },
   stepTypeLabel: {
     color: colors.text,
     fontSize: 16,
@@ -273,9 +267,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     padding: spacing.md,
-  },
-  stepCardPressed: {
-    opacity: 0.84,
   },
   stepText: {
     color: colors.text,

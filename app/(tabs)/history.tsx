@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
   formatDurationFromSeconds,
@@ -8,6 +8,7 @@ import {
   useProgramsStore,
 } from "../../features/programs";
 import { colors, radius, spacing } from "../../theme";
+import { SquircleButton, SquircleView } from "../../ui/Squircle";
 
 export default function HistoryScreen() {
   const router = useRouter();
@@ -28,16 +29,16 @@ export default function HistoryScreen() {
       <Text style={styles.title}>History</Text>
 
       {completedCourses.length === 0 ? (
-        <View style={styles.emptyState}>
+        <SquircleView style={styles.emptyState}>
           <Text style={styles.emptyTitle}>No completed courses yet</Text>
           <Text style={styles.emptyText}>
             Completed courses will appear here once you start progressing through a program.
           </Text>
-        </View>
+        </SquircleView>
       ) : (
         <View style={styles.list}>
           {completedCourses.map(({ course, program, weekIndex }) => (
-            <Pressable
+            <SquircleButton
               key={course.id}
               onPress={() =>
                 router.push({
@@ -49,7 +50,7 @@ export default function HistoryScreen() {
                   },
                 })
               }
-              style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+              style={styles.card}
             >
               <View style={styles.cardBody}>
                 <Text style={styles.cardTitle}>{course.name}</Text>
@@ -60,7 +61,7 @@ export default function HistoryScreen() {
                   {formatDurationFromSeconds(getCourseDurationSeconds(course))}
                 </Text>
               </View>
-            </Pressable>
+            </SquircleButton>
           ))}
         </View>
       )}
@@ -130,8 +131,5 @@ const styles = StyleSheet.create({
   cardMeta: {
     color: colors.textMuted,
     fontSize: 14,
-  },
-  pressed: {
-    opacity: 0.85,
   },
 });

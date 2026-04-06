@@ -1,8 +1,9 @@
 import { ReactNode } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 import { DayOfWeek, ProgramDraft, getCoursesForDay, weekDayLabels } from "../../features/programs";
 import { colors, radius, spacing } from "../../theme";
+import { SquircleButton, SquircleView } from "../../ui/Squircle";
 
 type ProgramDraftCalendarProps = {
   draft: ProgramDraft;
@@ -18,7 +19,7 @@ export function ProgramDraftCalendar({
   titleSlot,
 }: ProgramDraftCalendarProps) {
   return (
-    <View style={styles.card}>
+    <SquircleView style={styles.card}>
       <View style={styles.titleRow}>
         <Text style={styles.title}>Calendar</Text>
         {titleSlot}
@@ -44,29 +45,28 @@ export function ProgramDraftCalendar({
               const hasCompletedCourse = courses.some((course) => course.completed);
 
               return (
-                <Pressable
+                <SquircleButton
                   key={`${week.id}-${index}`}
                   onPress={() => onSelectCell(week.index, dayOfWeek)}
-                  style={({ pressed }) => [
+                  style={[
                     styles.cell,
                     hasCourse
                       ? showCompleted && hasCompletedCourse
                         ? styles.cellCompleted
                         : styles.cellFilled
                       : styles.cellEmpty,
-                    pressed && styles.cellPressed,
                   ]}
                 >
                   {courses.length > 0 ? (
                     <Text style={styles.cellText}>{courses.length}</Text>
                   ) : null}
-                </Pressable>
+                </SquircleButton>
               );
             })}
           </View>
         ))}
       </View>
-    </View>
+    </SquircleView>
   );
 }
 
@@ -132,9 +132,6 @@ const styles = StyleSheet.create({
   },
   cellCompleted: {
     backgroundColor: colors.success,
-  },
-  cellPressed: {
-    opacity: 0.8,
   },
   cellText: {
     color: colors.surface,

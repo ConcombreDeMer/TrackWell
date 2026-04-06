@@ -1,14 +1,15 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Pressable, StyleSheet } from "react-native";
+import { StyleSheet } from "react-native";
 
 import { colors, radius, spacing } from "../../theme";
+import { SquircleButton } from "../../ui/Squircle";
 
 export function BackButton() {
   const router = useRouter();
 
   return (
-    <Pressable
+    <SquircleButton
       onPress={() => {
         if (router.canGoBack()) {
           router.back();
@@ -17,10 +18,10 @@ export function BackButton() {
 
         router.replace("/");
       }}
-      style={({ pressed }) => [styles.button, pressed && styles.pressed]}
+      style={styles.button}
     >
       <Ionicons color={colors.text} name="chevron-back" size={22} />
-    </Pressable>
+    </SquircleButton>
   );
 }
 
@@ -36,8 +37,5 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: spacing.sm,
     width: 44,
-  },
-  pressed: {
-    opacity: 0.85,
   },
 });

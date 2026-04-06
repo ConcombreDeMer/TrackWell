@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 import { Course, Program, formatDurationFromSeconds, getCourseDurationSeconds } from "../../features/programs";
 import { colors, radius, spacing } from "../../theme";
+import { SquircleButton, SquircleView } from "../../ui/Squircle";
 
 type NextCourseCardProps = {
   course: Course;
@@ -15,7 +16,7 @@ export function NextCourseCard({ course, onPlayPress, weekIndex }: NextCourseCar
   return (
     <View style={styles.wrapper}>
       <Text style={styles.heading}>Prochaine course</Text>
-      <View style={styles.card}>
+      <SquircleView style={styles.card}>
         <View style={styles.textBlock}>
           <Text style={styles.title}>
             Semaine {weekIndex} - {course.name}
@@ -24,13 +25,13 @@ export function NextCourseCard({ course, onPlayPress, weekIndex }: NextCourseCar
             {formatDurationFromSeconds(getCourseDurationSeconds(course))}
           </Text>
         </View>
-        <Pressable
+        <SquircleButton
           onPress={onPlayPress}
-          style={({ pressed }) => [styles.iconBox, pressed && styles.pressed]}
+          style={styles.iconBox}
         >
           <Ionicons color={colors.surface} name="play" size={24} />
-        </Pressable>
-      </View>
+        </SquircleButton>
+      </SquircleView>
     </View>
   );
 }
@@ -53,9 +54,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     padding: spacing.md,
-  },
-  pressed: {
-    opacity: 0.92,
   },
   textBlock: {
     flex: 1,

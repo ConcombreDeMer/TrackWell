@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 import { colors, radius, spacing } from "../theme";
+import { SquircleButton } from "./Squircle";
 
 type ActionCardButtonProps = {
   label: string;
@@ -19,12 +20,11 @@ export function ActionCardButton({
   const dark = variant === "dark";
 
   return (
-    <Pressable
+    <SquircleButton
       onPress={onPress}
-      style={({ pressed }) => [
+      style={[
         styles.base,
         dark ? styles.dark : styles.light,
-        pressed && styles.pressed,
       ]}
     >
       <Text style={[styles.label, dark ? styles.darkLabel : styles.lightLabel]}>
@@ -37,7 +37,7 @@ export function ActionCardButton({
           size={28}
         />
       </View>
-    </Pressable>
+    </SquircleButton>
   );
 }
 
@@ -73,8 +73,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     minWidth: 28,
-  },
-  pressed: {
-    opacity: 0.9,
   },
 });

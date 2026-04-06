@@ -1,7 +1,8 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 import { Program, getProgramCompletion, getProgramCourseCount } from "../../features/programs";
 import { colors, radius, spacing } from "../../theme";
+import { SquircleButton } from "../../ui/Squircle";
 
 type SelectedProgramCardProps = {
   program: Program;
@@ -13,7 +14,7 @@ export function SelectedProgramCard({ program, onPress }: SelectedProgramCardPro
   const completion = getProgramCompletion(program);
 
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
+    <SquircleButton onPress={onPress} style={styles.card}>
       <Text style={styles.title}>{program.name}</Text>
       <Text numberOfLines={2} style={styles.description}>
         {program.description || "No description yet."}
@@ -33,7 +34,7 @@ export function SelectedProgramCard({ program, onPress }: SelectedProgramCardPro
           <Text style={styles.statLabel}>Completion</Text>
         </View>
       </View>
-    </Pressable>
+    </SquircleButton>
   );
 }
 
@@ -43,9 +44,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     gap: spacing.md,
     padding: spacing.xl,
-  },
-  pressed: {
-    opacity: 0.92,
   },
   title: {
     color: colors.surface,

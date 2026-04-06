@@ -1,14 +1,15 @@
 import { ReactNode } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet } from "react-native";
 
 import { colors, radius, spacing } from "../theme";
+import { SquircleView } from "./Squircle";
 
 type SectionCardProps = {
   children: ReactNode;
 };
 
 export function SectionCard({ children }: SectionCardProps) {
-  return <View style={styles.card}>{children}</View>;
+  return <SquircleView style={styles.card}>{children}</SquircleView>;
 }
 
 const styles = StyleSheet.create({

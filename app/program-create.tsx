@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { ProgramDraftCalendar } from "../components/programs/ProgramDraftCalendar";
 import { getCourseForDay, getDayName, useProgramsStore } from "../features/programs";
@@ -7,6 +7,7 @@ import { colors, spacing } from "../theme";
 import { CounterField } from "../ui/CounterField";
 import { PrimaryButton } from "../ui/PrimaryButton";
 import { SectionCard } from "../ui/SectionCard";
+import { SquircleButton } from "../ui/Squircle";
 import { TextField } from "../ui/TextField";
 
 export default function ProgramCreateScreen() {
@@ -126,7 +127,7 @@ export default function ProgramCreateScreen() {
                 ) : (
                   <View style={styles.courseList}>
                     {week.courses.map((course) => (
-                      <Pressable
+                      <SquircleButton
                         key={course.id}
                         onPress={() =>
                           router.push({
@@ -138,11 +139,11 @@ export default function ProgramCreateScreen() {
                             },
                           })
                         }
-                        style={({ pressed }) => [styles.courseRow, pressed && styles.pressed]}
+                        style={styles.courseRow}
                       >
                         <Text style={styles.courseName}>{course.name}</Text>
                         <Text style={styles.courseMeta}>{getDayName(course.dayOfWeek)}</Text>
-                      </Pressable>
+                      </SquircleButton>
                     ))}
                   </View>
                 )}
@@ -230,8 +231,5 @@ const styles = StyleSheet.create({
   courseMeta: {
     color: colors.textMuted,
     fontSize: 14,
-  },
-  pressed: {
-    opacity: 0.86,
   },
 });
