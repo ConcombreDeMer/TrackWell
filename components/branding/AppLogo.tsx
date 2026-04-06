@@ -4,16 +4,17 @@ import { colors, radius, spacing } from "../../theme";
 
 type AppLogoProps = {
   showHint?: boolean;
+  size?: number;
 };
 
-export function AppLogo({ showHint = false }: AppLogoProps) {
+export function AppLogo({ showHint = false, size = 72 }: AppLogoProps) {
   return (
     <View style={styles.container}>
       <Image
         accessibilityIgnoresInvertColors
         resizeMode="contain"
         source={require("../../assets/branding/logo.png")}
-        style={styles.image}
+        style={[styles.image, { height: size, width: size }]}
       />
       {showHint ? (
         <Text style={styles.hint}>
@@ -31,8 +32,6 @@ const styles = StyleSheet.create({
   },
   image: {
     borderRadius: radius.md,
-    height: 72,
-    width: 72,
   },
   hint: {
     color: colors.textMuted,

@@ -4,17 +4,29 @@ import { Program, getProgramCompletion, getProgramCourseCount } from "../../feat
 import { colors, radius, spacing } from "../../theme";
 
 type ProgramSummaryCardProps = {
+  isSelected?: boolean;
   program: Program;
   onPress: () => void;
 };
 
-export function ProgramSummaryCard({ program, onPress }: ProgramSummaryCardProps) {
+export function ProgramSummaryCard({
+  isSelected = false,
+  program,
+  onPress,
+}: ProgramSummaryCardProps) {
   const courseCount = getProgramCourseCount(program);
   const completion = getProgramCompletion(program);
 
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
-      <Text style={styles.title}>{program.name}</Text>
+      <View style={styles.header}>
+        <Text style={styles.title}>{program.name}</Text>
+        {isSelected ? (
+          <View style={styles.selectedTag}>
+            <Text style={styles.selectedTagText}>Selected</Text>
+          </View>
+        ) : null}
+      </View>
       <Text numberOfLines={2} style={styles.description}>
         {program.description || "No description yet."}
       </Text>
@@ -49,9 +61,27 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.92,
   },
+  header: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    gap: spacing.md,
+    justifyContent: "space-between",
+  },
   title: {
     color: colors.text,
+    flex: 1,
     fontSize: 24,
+    fontWeight: "700",
+  },
+  selectedTag: {
+    backgroundColor: colors.success,
+    borderRadius: 12,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  selectedTagText: {
+    color: colors.surface,
+    fontSize: 15,
     fontWeight: "700",
   },
   description: {

@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
   content: {
     gap: spacing.lg,
     paddingHorizontal: spacing.xl,
-    paddingTop: 96,
+    paddingTop: 20,
     paddingBottom: 120,
   },
   title: {

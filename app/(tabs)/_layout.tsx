@@ -11,7 +11,6 @@ export default function TabsLayout() {
       iconColor={{ default: "#848484", selected: colors.text }}
       labelStyle={{
         color: colors.text,
-        fontWeight: "600",
       }}
       minimizeBehavior="automatic"
       tintColor={colors.text}
@@ -22,20 +21,20 @@ export default function TabsLayout() {
       */}
       <NativeTabs.Trigger name="index">
         <Label>Home</Label>
-        <Icon sf="house" />
+        <Icon sf={{ default: "house", selected: "house.fill" }} />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="programs">
         <Label>Programs</Label>
-        <Icon sf="list.bullet.rectangle" />
+        <Icon sf={{ default: "list.bullet.rectangle", selected: "list.bullet.rectangle.fill" }} />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="history">
         <Label>History</Label>
-        <Icon sf="clock.arrow.circlepath" />
+        <Icon sf={{ default: "clock", selected: "clock.fill" }} />
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="profile">
+      {/* <NativeTabs.Trigger name="profile">
         <Label>Profile</Label>
-        <Icon sf="person.crop.circle" />
-      </NativeTabs.Trigger>
+        <Icon sf={{ default: "person.crop.circle", selected: "person.crop.circle.fill" }} />
+      </NativeTabs.Trigger> */}
     </NativeTabs>
   );
 }

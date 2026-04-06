@@ -8,7 +8,7 @@ import { ActionCardButton } from "../../ui/ActionCardButton";
 
 export default function ProgramsScreen() {
   const router = useRouter();
-  const { programs, resetProgramDraft } = useProgramsStore();
+  const { programs, resetProgramDraft, selectedProgramId } = useProgramsStore();
 
   return (
     <ScrollView contentContainerStyle={styles.content} style={styles.screen}>
@@ -38,6 +38,7 @@ export default function ProgramsScreen() {
         ) : (
           programs.map((program) => (
             <ProgramSummaryCard
+              isSelected={program.id === selectedProgramId}
               key={program.id}
               onPress={() =>
                 router.push({
@@ -63,7 +64,7 @@ const styles = StyleSheet.create({
     gap: spacing.xl,
     paddingBottom: 120,
     paddingHorizontal: spacing.xl,
-    paddingTop: 96,
+    paddingTop: 20,
   },
   title: {
     color: colors.text,

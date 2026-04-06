@@ -1,7 +1,7 @@
-import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 
+import { AppLogo } from "../../components/branding/AppLogo";
 import { NextCourseCard } from "../../components/home/NextCourseCard";
 import { SelectedProgramCard } from "../../components/home/SelectedProgramCard";
 import { getNextCourse, useProgramsStore } from "../../features/programs";
@@ -17,7 +17,7 @@ export default function HomeScreen() {
   return (
     <ScrollView contentContainerStyle={styles.content} style={styles.screen}>
       <View style={styles.header}>
-        <Ionicons color={colors.text} name="walk" size={52} />
+        <AppLogo size={52} />
         <Text style={styles.title}>Welcome back</Text>
       </View>
 
@@ -68,13 +68,6 @@ export default function HomeScreen() {
         </View>
       )}
 
-      <View style={styles.shortcuts}>
-        <PrimaryButton
-          label="Open Chrono"
-          onPress={() => router.push("/chrono")}
-          variant="secondary"
-        />
-      </View>
     </ScrollView>
   );
 }
@@ -87,7 +80,7 @@ const styles = StyleSheet.create({
   content: {
     gap: spacing.xl,
     paddingHorizontal: spacing.xl,
-    paddingTop: 92,
+    paddingTop: 20,
     paddingBottom: 120,
   },
   header: {

@@ -151,11 +151,14 @@ export default function ChronoScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.content} style={styles.screen}>
-      <BackButton />
-
-      <View style={styles.header}>
-        <Text style={styles.title}>{course.name}</Text>
-        <Text style={styles.subtitle}>de {program.name}</Text>
+      <View style={styles.topBar}>
+        <View style={styles.backButtonWrap}>
+          <BackButton />
+        </View>
+        <View style={styles.header}>
+          <Text style={styles.title}>{course.name}</Text>
+          <Text style={styles.subtitle}>de {program.name}</Text>
+        </View>
       </View>
 
       <View style={styles.timerCard}>
@@ -276,6 +279,17 @@ const styles = StyleSheet.create({
     paddingTop: 70,
     paddingBottom: 48,
   },
+  topBar: {
+    justifyContent: "center",
+    minHeight: 72,
+    position: "relative",
+  },
+  backButtonWrap: {
+    left: 0,
+    position: "absolute",
+    top: 0,
+    zIndex: 1,
+  },
   header: {
     alignItems: "center",
     gap: 4,
@@ -290,6 +304,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 18,
     fontWeight: "600",
+    textAlign: "center",
   },
   timerCard: {
     alignItems: "center",
@@ -298,6 +313,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     padding: spacing.xl,
+    marginTop: 100,
   },
   timerLabel: {
     color: "rgba(255,255,255,0.75)",
