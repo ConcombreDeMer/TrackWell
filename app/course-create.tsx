@@ -12,6 +12,7 @@ import {
   LayoutAnimation,
   LayoutAnimationConfig,
   PanResponder,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -109,6 +110,7 @@ export default function CourseCreateScreen() {
   const [animatedItemId, setAnimatedItemId] = useState<string | null>(null);
   const [animatedLoopStepId, setAnimatedLoopStepId] = useState<string | null>(null);
   const [expandedStepId, setExpandedStepId] = useState<string | null>(null);
+  const [expandedLoopId, setExpandedLoopId] = useState<string | null>(null);
 
   const plusWrapRef = useRef<View | null>(null);
   const stepChoiceRef = useRef<View | null>(null);
@@ -408,6 +410,19 @@ export default function CourseCreateScreen() {
     }
   }
 
+  function handleLoopRepeatCountChange(itemId: string, delta: number) {
+    setItems((current) =>
+      current.map((item) =>
+        item.id === itemId && item.kind === "loop"
+          ? {
+              ...item,
+              repeatCount: Math.max(1, Math.min(12, item.repeatCount + delta)),
+            }
+          : item,
+      ),
+    );
+  }
+
   function startSelection(x: number, y: number) {
     gestureStart.current = { x, y };
     selectionArmed.current = false;
@@ -590,8 +605,29 @@ export default function CourseCreateScreen() {
                       <BuilderLoopCard
                         animatedStepId={animatedLoopStepId}
                         expandedStepId={expandedStepId}
+                        isRepeatExpanded={expandedLoopId === item.id}
                         item={item}
                         onIncrement={() => addStepToLoop(item.id)}
+                        onLoopBackgroundPress={() => {
+                          const hasExpandedLoopStep = item.steps.some(
+                            (step) => step.id === expandedStepId,
+                          );
+
+                          if (expandedLoopId !== item.id && !hasExpandedLoopStep) {
+                            return;
+                          }
+
+                          LayoutAnimation.configureNext(getBouncyLayoutAnimation());
+                          setExpandedLoopId(null);
+                          if (hasExpandedLoopStep) {
+                            setExpandedStepId(null);
+                          }
+                        }}
+                        onLoopRepeatCountChange={(delta) => handleLoopRepeatCountChange(item.id, delta)}
+                        onLoopRepeatPress={() => {
+                          LayoutAnimation.configureNext(getBouncyLayoutAnimation());
+                          setExpandedLoopId((current) => (current === item.id ? null : item.id));
+                        }}
                         onLoopStepDelete={(stepId) => removeLoopStep(item.id, stepId)}
                         onLoopStepDurationChange={handleLoopStepDurationChange}
                         onLoopStepPress={handleLoopStepPress}
@@ -707,8 +743,12 @@ function BuilderStepCard({
 function BuilderLoopCard({
   animatedStepId,
   expandedStepId,
+  isRepeatExpanded,
   item,
   onIncrement,
+  onLoopBackgroundPress,
+  onLoopRepeatCountChange,
+  onLoopRepeatPress,
   onLoopStepDelete,
   onLoopStepDurationChange,
   onLoopStepPress,
@@ -717,16 +757,54 @@ function BuilderLoopCard({
 }: {
   animatedStepId: string | null;
   expandedStepId: string | null;
+  isRepeatExpanded: boolean;
   item: Extract<BuilderItem, { kind: "loop" }>;
   onIncrement: () => void;
+  onLoopBackgroundPress: () => void;
+  onLoopRepeatCountChange: (delta: number) => void;
+  onLoopRepeatPress: () => void;
   onLoopStepDelete: (stepId: string) => void;
   onLoopStepDurationChange: (itemId: string, stepIndex: number, delta: number) => void;
   onLoopStepPress: (stepId: string) => void;
   onSwipeStateChange: (isSwiping: boolean) => void;
   onLoopStepTypeChange: (itemId: string, stepIndex: number, type: StepType) => void;
 }) {
+  const repeatTranslate = useRef(new Animated.Value(0)).current;
+  const repeatOpacity = useRef(new Animated.Value(1)).current;
+  const previousRepeatRef = useRef(item.repeatCount);
+  const hasExpandedLoopStep = item.steps.some((step) => step.id === expandedStepId);
+
+  useEffect(() => {
+    if (previousRepeatRef.current === item.repeatCount) {
+      return;
+    }
+
+    repeatTranslate.setValue(8);
+    repeatOpacity.setValue(0);
+    Animated.parallel([
+      Animated.timing(repeatTranslate, {
+        duration: 180,
+        easing: Easing.out(Easing.cubic),
+        toValue: 0,
+        useNativeDriver: true,
+      }),
+      Animated.timing(repeatOpacity, {
+        duration: 180,
+        easing: Easing.out(Easing.cubic),
+        toValue: 1,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    previousRepeatRef.current = item.repeatCount;
+  }, [item.repeatCount, repeatOpacity, repeatTranslate]);
+
   return (
     <SquircleView style={styles.loopCard}>
+      <Pressable
+        onPress={onLoopBackgroundPress}
+        pointerEvents={isRepeatExpanded || hasExpandedLoopStep ? "auto" : "none"}
+        style={styles.loopBackgroundDismissTap}
+      />
       <View style={styles.loopSteps}>
         {item.steps.map((step, index) => (
           <AnimatedEntryView animateIn={animatedStepId === step.id} key={step.id}>
@@ -757,12 +835,30 @@ function BuilderLoopCard({
       </View>
 
       <View style={styles.loopFooter}>
-        <SquircleView style={styles.loopRepeatControl}>
+        <SquircleButton onPress={onLoopRepeatPress} style={[styles.loopRepeatControl, isRepeatExpanded && styles.loopRepeatControlExpanded]}>
+          <View style={styles.loopRepeatTopRow}>
           <Text style={styles.loopRepeatLabel}>Time</Text>
           <SquircleView style={styles.loopRepeatValueWrap}>
-            <Text style={styles.loopRepeatValue}>{item.repeatCount}</Text>
+            <Animated.Text
+              style={[
+                styles.loopRepeatValue,
+                {
+                  opacity: repeatOpacity,
+                  transform: [{ translateY: repeatTranslate }],
+                },
+              ]}
+            >
+              {item.repeatCount}
+            </Animated.Text>
           </SquircleView>
-        </SquircleView>
+        </View>
+          {isRepeatExpanded ? (
+            <View style={styles.loopRepeatButtonsRow}>
+              <RepeatingIconButton label="−" onStep={() => onLoopRepeatCountChange(-1)} />
+              <RepeatingIconButton label="+" onStep={() => onLoopRepeatCountChange(1)} />
+            </View>
+          ) : null}
+        </SquircleButton>
         <SquircleButton onPress={onIncrement} style={styles.innerAddButton}>
           <Text style={styles.innerAddLabel}>+</Text>
         </SquircleButton>
@@ -1827,8 +1923,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#E5E5E5",
     borderRadius: 34,
     paddingHorizontal: spacing.sm,
-    paddingTop: spacing.sm,
     paddingBottom: spacing.sm,
+    paddingTop: spacing.sm,
+    position: "relative",
+  },
+  loopBackgroundDismissTap: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 34,
   },
   loopSteps: {
     gap: spacing.xs,
@@ -1851,11 +1952,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#CFCFCF",
     borderRadius: 20,
-    flexDirection: "row",
     gap: spacing.sm,
     minHeight: 50,
-    paddingLeft: spacing.sm,
-    paddingRight: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  loopRepeatControlExpanded: {
+    minHeight: 106,
+    paddingBottom: spacing.sm,
+  },
+  loopRepeatTopRow: {
+    alignItems: "center",
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: 125,
+  },
+  loopRepeatButtonsRow: {
+    flexDirection: "row",
+    gap: spacing.sm,
   },
   loopRepeatLabel: {
     color: "#4A4A4A",
@@ -1869,7 +1984,7 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: "center",
     minWidth: 58,
-    paddingHorizontal: spacing.sm,
+    // paddingHorizontal: spacing.sm,
   },
   loopRepeatValue: {
     color: colors.text,
