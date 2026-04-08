@@ -40,7 +40,7 @@ type BuilderItem =
       id: string;
       kind: "loop";
       repeatCount: number;
-      steps: [DraftStep, DraftStep];
+      steps: DraftStep[];
     };
 
 type ChoiceType = "step" | "loop";
@@ -107,6 +107,7 @@ export default function CourseCreateScreen() {
   const [loopBounds, setLoopBounds] = useState<LayoutBox | null>(null);
   const [isSwipingItem, setIsSwipingItem] = useState(false);
   const [animatedItemId, setAnimatedItemId] = useState<string | null>(null);
+  const [animatedLoopStepId, setAnimatedLoopStepId] = useState<string | null>(null);
   const [expandedStepId, setExpandedStepId] = useState<string | null>(null);
 
   const plusWrapRef = useRef<View | null>(null);
@@ -213,6 +214,27 @@ export default function CourseCreateScreen() {
     setItems((current) => current.filter((item) => item.id !== itemId));
   }
 
+  function removeLoopStep(itemId: string, stepId: string) {
+    LayoutAnimation.configureNext({
+      duration: 240,
+      update: {
+        property: LayoutAnimation.Properties.opacity,
+        type: LayoutAnimation.Types.easeInEaseOut,
+      },
+    });
+    setItems((current) =>
+      current.map((item) =>
+        item.id === itemId && item.kind === "loop"
+          ? {
+              ...item,
+              steps: item.steps.filter((step) => step.id !== stepId),
+            }
+          : item,
+      ),
+    );
+    setExpandedStepId((current) => (current === stepId ? null : current));
+  }
+
   function handleStepPress(itemId: string) {
     LayoutAnimation.configureNext(getBouncyLayoutAnimation());
     setExpandedStepId((current) => {
@@ -311,21 +333,21 @@ export default function CourseCreateScreen() {
     });
   }
 
-  function handleLoopStepTypeChange(itemId: string, stepIndex: 0 | 1, type: StepType) {
+  function handleLoopStepTypeChange(itemId: string, stepIndex: number, type: StepType) {
     setItems((current) =>
       current.map((item) => {
         if (item.id !== itemId || item.kind !== "loop") {
           return item;
         }
 
-        const nextSteps: [DraftStep, DraftStep] = item.steps.map((step, index) =>
+        const nextSteps = item.steps.map((step, index) =>
           index === stepIndex
             ? {
                 ...step,
                 type,
               }
             : step,
-        ) as [DraftStep, DraftStep];
+        );
 
         return {
           ...item,
@@ -335,21 +357,21 @@ export default function CourseCreateScreen() {
     );
   }
 
-  function handleLoopStepDurationChange(itemId: string, stepIndex: 0 | 1, delta: number) {
+  function handleLoopStepDurationChange(itemId: string, stepIndex: number, delta: number) {
     setItems((current) =>
       current.map((item) => {
         if (item.id !== itemId || item.kind !== "loop") {
           return item;
         }
 
-        const nextSteps: [DraftStep, DraftStep] = item.steps.map((step, index) =>
+        const nextSteps = item.steps.map((step, index) =>
           index === stepIndex
             ? {
                 ...step,
                 durationMinutes: Math.max(1, step.durationMinutes + delta),
               }
             : step,
-        ) as [DraftStep, DraftStep];
+        );
 
         return {
           ...item,
@@ -359,17 +381,31 @@ export default function CourseCreateScreen() {
     );
   }
 
-  function incrementLoopCount(itemId: string) {
+  function addStepToLoop(itemId: string) {
+    let nextStepId: string | null = null;
+
+    LayoutAnimation.configureNext(getBouncyLayoutAnimation());
     setItems((current) =>
       current.map((item) =>
         item.id === itemId && item.kind === "loop"
           ? {
               ...item,
-              repeatCount: Math.min(item.repeatCount + 1, 9),
+              steps: [
+                ...item.steps,
+                (() => {
+                  const nextStep = createDraftStep("walk", 1);
+                  nextStepId = nextStep.id;
+                  return nextStep;
+                })(),
+              ],
             }
           : item,
       ),
     );
+
+    if (nextStepId) {
+      setAnimatedLoopStepId(nextStepId);
+    }
   }
 
   function startSelection(x: number, y: number) {
@@ -552,11 +588,14 @@ export default function CourseCreateScreen() {
                       onSwipeStateChange={setIsSwipingItem}
                     >
                       <BuilderLoopCard
+                        animatedStepId={animatedLoopStepId}
                         expandedStepId={expandedStepId}
                         item={item}
-                        onIncrement={() => incrementLoopCount(item.id)}
+                        onIncrement={() => addStepToLoop(item.id)}
+                        onLoopStepDelete={(stepId) => removeLoopStep(item.id, stepId)}
                         onLoopStepDurationChange={handleLoopStepDurationChange}
                         onLoopStepPress={handleLoopStepPress}
+                        onSwipeStateChange={setIsSwipingItem}
                         onLoopStepTypeChange={handleLoopStepTypeChange}
                       />
                     </SwipeToDeleteRow>
@@ -666,50 +705,64 @@ function BuilderStepCard({
 }
 
 function BuilderLoopCard({
+  animatedStepId,
   expandedStepId,
   item,
   onIncrement,
+  onLoopStepDelete,
   onLoopStepDurationChange,
   onLoopStepPress,
+  onSwipeStateChange,
   onLoopStepTypeChange,
 }: {
+  animatedStepId: string | null;
   expandedStepId: string | null;
   item: Extract<BuilderItem, { kind: "loop" }>;
   onIncrement: () => void;
-  onLoopStepDurationChange: (itemId: string, stepIndex: 0 | 1, delta: number) => void;
+  onLoopStepDelete: (stepId: string) => void;
+  onLoopStepDurationChange: (itemId: string, stepIndex: number, delta: number) => void;
   onLoopStepPress: (stepId: string) => void;
-  onLoopStepTypeChange: (itemId: string, stepIndex: 0 | 1, type: StepType) => void;
+  onSwipeStateChange: (isSwiping: boolean) => void;
+  onLoopStepTypeChange: (itemId: string, stepIndex: number, type: StepType) => void;
 }) {
   return (
     <SquircleView style={styles.loopCard}>
-      <View style={styles.loopHeader}>
-        <Text style={styles.loopCount}>x{item.repeatCount}</Text>
-      </View>
-
       <View style={styles.loopSteps}>
         {item.steps.map((step, index) => (
-          <SquircleButton
-            key={step.id}
-            onPress={() => onLoopStepPress(step.id)}
-            style={styles.loopStepCard}
-          >
-            <View style={styles.stepCardContent}>
-              <CompactStepRow step={step} />
-              {expandedStepId === step.id ? (
-                <StepEditor
-                  durationMinutes={step.durationMinutes}
-                  onDecrease={() => onLoopStepDurationChange(item.id, index as 0 | 1, -1)}
-                  onIncrease={() => onLoopStepDurationChange(item.id, index as 0 | 1, 1)}
-                  onSelectType={(type) => onLoopStepTypeChange(item.id, index as 0 | 1, type)}
-                  type={step.type}
-                />
-              ) : null}
-            </View>
-          </SquircleButton>
+          <AnimatedEntryView animateIn={animatedStepId === step.id} key={step.id}>
+            <SwipeToDeleteRow
+              onDelete={() => onLoopStepDelete(step.id)}
+              onSwipeStateChange={onSwipeStateChange}
+            >
+              <SquircleButton
+                onPress={() => onLoopStepPress(step.id)}
+                style={styles.loopStepCard}
+              >
+                <View style={styles.stepCardContent}>
+                  <CompactStepRow step={step} />
+                  {expandedStepId === step.id ? (
+                    <StepEditor
+                      durationMinutes={step.durationMinutes}
+                      onDecrease={() => onLoopStepDurationChange(item.id, index, -1)}
+                      onIncrease={() => onLoopStepDurationChange(item.id, index, 1)}
+                      onSelectType={(type) => onLoopStepTypeChange(item.id, index, type)}
+                      type={step.type}
+                    />
+                  ) : null}
+                </View>
+              </SquircleButton>
+            </SwipeToDeleteRow>
+          </AnimatedEntryView>
         ))}
       </View>
 
       <View style={styles.loopFooter}>
+        <SquircleView style={styles.loopRepeatControl}>
+          <Text style={styles.loopRepeatLabel}>Time</Text>
+          <SquircleView style={styles.loopRepeatValueWrap}>
+            <Text style={styles.loopRepeatValue}>{item.repeatCount}</Text>
+          </SquircleView>
+        </SquircleView>
         <SquircleButton onPress={onIncrement} style={styles.innerAddButton}>
           <Text style={styles.innerAddLabel}>+</Text>
         </SquircleButton>
@@ -787,6 +840,7 @@ function CompactStepRow({ step }: { step: DraftStep }) {
       </View>
       <View style={styles.stepMeta}>
         <Animated.Text
+          numberOfLines={1}
           style={[
             styles.stepTypeLabel,
             {
@@ -798,7 +852,7 @@ function CompactStepRow({ step }: { step: DraftStep }) {
           {step.type === "walk" ? "Walk" : "Run"}
         </Animated.Text>
       </View>
-      <Text style={styles.stepDuration}>{step.durationMinutes} min</Text>
+      <Text numberOfLines={1} style={styles.stepDuration}>{step.durationMinutes} min</Text>
     </View>
   );
 }
@@ -940,6 +994,57 @@ function RepeatingIconButton({
     >
       <Text style={styles.miniIconLabel}>{label}</Text>
     </SquircleButton>
+  );
+}
+
+function AnimatedEntryView({
+  animateIn = false,
+  children,
+}: {
+  animateIn?: boolean;
+  children: ReactNode;
+}) {
+  const enterOpacity = useRef(new Animated.Value(animateIn ? 0 : 1)).current;
+  const enterTranslateY = useRef(new Animated.Value(animateIn ? 18 : 0)).current;
+  const enterScale = useRef(new Animated.Value(animateIn ? 0.96 : 1)).current;
+
+  useEffect(() => {
+    if (!animateIn) {
+      return;
+    }
+
+    Animated.parallel([
+      Animated.timing(enterOpacity, {
+        duration: 180,
+        toValue: 1,
+        useNativeDriver: true,
+      }),
+      Animated.spring(enterTranslateY, {
+        damping: 18,
+        mass: 0.7,
+        stiffness: 240,
+        toValue: 0,
+        useNativeDriver: true,
+      }),
+      Animated.spring(enterScale, {
+        damping: 18,
+        mass: 0.7,
+        stiffness: 260,
+        toValue: 1,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [animateIn, enterOpacity, enterScale, enterTranslateY]);
+
+  return (
+    <Animated.View
+      style={{
+        opacity: enterOpacity,
+        transform: [{ translateY: enterTranslateY }, { scale: enterScale }],
+      }}
+    >
+      {children}
+    </Animated.View>
   );
 }
 
@@ -1348,7 +1453,7 @@ function flattenBuilderItems(items: BuilderItem[]) {
       return [item.step];
     }
 
-    return Array.from({ length: item.repeatCount }, () => item.steps).flat();
+    return Array.from({ length: item.repeatCount }, () => item.steps.map((step) => ({ ...step }))).flat();
   });
 }
 
@@ -1609,6 +1714,7 @@ const styles = StyleSheet.create({
     width: DELETE_ACTION_WIDTH - 6,
   },
   stepCard: {
+    alignItems: "stretch",
     backgroundColor: colors.surface,
     borderColor: "#ECECEC",
     borderRadius: 20,
@@ -1618,6 +1724,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   stepCardContent: {
+    width: "100%",
     gap: spacing.md,
     justifyContent: "center",
     minHeight: 54,
@@ -1634,6 +1741,7 @@ const styles = StyleSheet.create({
   },
   stepMeta: {
     flex: 1,
+    minWidth: 0,
     paddingHorizontal: spacing.md,
   },
   stepTypeLabel: {
@@ -1661,6 +1769,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     minHeight: 42,
+    minWidth: 0,
     paddingHorizontal: spacing.md,
   },
   miniOptionButtonActive: {
@@ -1694,8 +1803,10 @@ const styles = StyleSheet.create({
   },
   durationEditorValue: {
     color: colors.text,
+    flex: 1,
     fontSize: 16,
     fontWeight: "600",
+    textAlign: "center",
   },
   duplicateButton: {
     alignItems: "center",
@@ -1717,45 +1828,64 @@ const styles = StyleSheet.create({
     borderRadius: 34,
     paddingHorizontal: spacing.sm,
     paddingTop: spacing.sm,
-    paddingBottom: spacing.md,
-  },
-  loopHeader: {
-    alignItems: "flex-end",
-    minHeight: 28,
-    paddingRight: spacing.xs,
-  },
-  loopCount: {
-    color: colors.text,
-    fontSize: 28,
-    fontWeight: "800",
-    lineHeight: 28,
+    paddingBottom: spacing.sm,
   },
   loopSteps: {
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
   loopStepCard: {
-    alignItems: "center",
+    alignItems: "stretch",
     backgroundColor: colors.surface,
     borderRadius: 26,
-    flexDirection: "row",
     minHeight: 82,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
   loopFooter: {
     alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
     paddingTop: spacing.md,
+  },
+  loopRepeatControl: {
+    alignItems: "center",
+    backgroundColor: "#CFCFCF",
+    borderRadius: 20,
+    flexDirection: "row",
+    gap: spacing.sm,
+    minHeight: 50,
+    paddingLeft: spacing.sm,
+    paddingRight: spacing.xs,
+  },
+  loopRepeatLabel: {
+    color: "#4A4A4A",
+    fontSize: 15,
+    fontWeight: "500",
+  },
+  loopRepeatValueWrap: {
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderRadius: 18,
+    height: 40,
+    justifyContent: "center",
+    minWidth: 58,
+    paddingHorizontal: spacing.sm,
+  },
+  loopRepeatValue: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: "700",
   },
   innerAddButton: {
     alignItems: "center",
     backgroundColor: "#C9C9C9",
-    borderRadius: radius.lg,
-    height: 44,
+    borderRadius: 16,
+    height: 50,
     justifyContent: "center",
-    width: 112,
+    width: 50,
   },
   innerAddLabel: {
-    color: colors.text,
+    color: colors.surface,
     fontSize: 28,
     lineHeight: 28,
   },
