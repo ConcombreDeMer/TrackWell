@@ -23,6 +23,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { DayOfWeek, StepType, getDayName, useProgramsStore } from "../features/programs";
 import { colors, radius, spacing } from "../theme";
+import { ActionCardButton } from "../ui/ActionCardButton";
 import { SquircleButton, SquircleView } from "../ui/Squircle";
 
 type DraftStep = {
@@ -63,6 +64,7 @@ const DELETE_MAX_SWIPE = Dimensions.get("window").width;
 const DELETE_CLOSE_THRESHOLD = DELETE_ACTION_WIDTH * 0.72;
 const DURATION_REPEAT_INITIAL_DELAY_MS = 260;
 const DURATION_REPEAT_INTERVAL_MS = 90;
+const CARD_RADIUS = 24;
 const AnimatedSquircleView = Animated.createAnimatedComponent(SquircleView);
 
 if (UIManager.setLayoutAnimationEnabledExperimental) {
@@ -111,6 +113,9 @@ export default function CourseCreateScreen() {
   const [animatedLoopStepId, setAnimatedLoopStepId] = useState<string | null>(null);
   const [expandedStepId, setExpandedStepId] = useState<string | null>(null);
   const [expandedLoopId, setExpandedLoopId] = useState<string | null>(null);
+  const initialItemsSnapshot = useRef(
+    serializeBuilderItems(editingCourse ? groupExistingSteps(editingCourse.steps) : []),
+  );
 
   const plusWrapRef = useRef<View | null>(null);
   const stepChoiceRef = useRef<View | null>(null);
@@ -121,6 +126,7 @@ export default function CourseCreateScreen() {
   const highlightedChoiceRef = useRef<ChoiceType | null>(null);
   const menuProgress = useRef(new Animated.Value(0)).current;
   const plusPressProgress = useRef(new Animated.Value(0)).current;
+  const hasUnsavedChanges = serializeBuilderItems(items) !== initialItemsSnapshot.current;
 
   useEffect(() => {
     return () => {
@@ -205,6 +211,26 @@ export default function CourseCreateScreen() {
     router.back();
   }
 
+  function handleClose() {
+    if (!hasUnsavedChanges) {
+      router.back();
+      return;
+    }
+
+    Alert.alert(
+      "Discard changes?",
+      "No changes will be saved if you leave this screen now.",
+      [
+        { style: "cancel", text: "Keep editing" },
+        {
+          style: "destructive",
+          text: "Discard",
+          onPress: () => router.back(),
+        },
+      ],
+    );
+  }
+
   function removeItem(itemId: string) {
     LayoutAnimation.configureNext({
       duration: 240,
@@ -239,15 +265,7 @@ export default function CourseCreateScreen() {
 
   function handleStepPress(itemId: string) {
     LayoutAnimation.configureNext(getBouncyLayoutAnimation());
-    setExpandedStepId((current) => {
-      const nextValue = current === itemId ? null : itemId;
-
-      if (nextValue) {
-        triggerStepOpenHaptic();
-      }
-
-      return nextValue;
-    });
+    setExpandedStepId((current) => (current === itemId ? null : itemId));
   }
 
   function handleStepTypeChange(itemId: string, type: StepType) {
@@ -324,15 +342,7 @@ export default function CourseCreateScreen() {
 
   function handleLoopStepPress(stepId: string) {
     LayoutAnimation.configureNext(getBouncyLayoutAnimation());
-    setExpandedStepId((current) => {
-      const nextValue = current === stepId ? null : stepId;
-
-      if (nextValue) {
-        triggerStepOpenHaptic();
-      }
-
-      return nextValue;
-    });
+    setExpandedStepId((current) => (current === stepId ? null : stepId));
   }
 
   function handleLoopStepTypeChange(itemId: string, stepIndex: number, type: StepType) {
@@ -648,14 +658,14 @@ export default function CourseCreateScreen() {
           locations={[0, 0.58, 1]}
           style={styles.footerGradient}
         />
-        <View style={styles.footer}>
-          <View style={styles.selectorZone}>
-            <View style={styles.selectorMenuShell}>
+        <View pointerEvents="box-none" style={styles.footer}>
+          <View pointerEvents="box-none" style={styles.selectorZone}>
+            <View pointerEvents="box-none" style={styles.selectorMenuShell}>
               <AnimatedSquircleView
                 pointerEvents="none"
                 style={[styles.selectorMenuBackground, { opacity: backgroundOpacity }]}
               />
-              <SquircleView style={styles.selectorMenu}>
+              <SquircleView pointerEvents="box-none" style={styles.selectorMenu}>
                 <Animated.View style={{ opacity: sideOpacity, transform: leftChoiceTransform }}>
                   <ChoiceButton
                     active={highlightedChoice === "loop"}
@@ -665,7 +675,7 @@ export default function CourseCreateScreen() {
                     onLayout={() => handleAbsoluteLayout(loopChoiceRef, setLoopBounds)}
                   />
                 </Animated.View>
-                <View style={styles.selectorCenter}>
+                <View pointerEvents="box-none" style={styles.selectorCenter}>
                   <ChevronTrail direction="left" opacity={chevronOpacity} />
                 <View
                   {...panResponder.panHandlers}
@@ -696,10 +706,18 @@ export default function CourseCreateScreen() {
             </View>
           </View>
 
-          <SquircleButton onPress={handleCreateCourse} style={styles.saveButton}>
-            <Text style={styles.saveLabel}>{isEditing ? "Save Course" : "Save Course"}</Text>
-            <Ionicons color={colors.surface} name="pencil" size={20} />
-          </SquircleButton>
+          <ActionCardButton
+            iconName={isEditing ? "pencil" : "add"}
+            label={isEditing ? "Save Course" : "Create Course"}
+            onPress={handleCreateCourse}
+            variant="dark"
+          />
+          <ActionCardButton
+            iconName="close-outline"
+            label="Cancel"
+            onPress={handleClose}
+            variant="light"
+          />
         </View>
       </View>
     </SafeAreaView>
@@ -1553,6 +1571,29 @@ function flattenBuilderItems(items: BuilderItem[]) {
   });
 }
 
+function serializeBuilderItems(items: BuilderItem[]) {
+  return JSON.stringify(
+    items.map((item) =>
+      item.kind === "step"
+        ? {
+            kind: item.kind,
+            step: {
+              durationMinutes: item.step.durationMinutes,
+              type: item.step.type,
+            },
+          }
+        : {
+            kind: item.kind,
+            repeatCount: item.repeatCount,
+            steps: item.steps.map((step) => ({
+              durationMinutes: step.durationMinutes,
+              type: step.type,
+            })),
+          },
+    ),
+  );
+}
+
 function createStepItem(index: number): BuilderItem {
   return {
     id: createBuilderId(`step-item-${index}`),
@@ -1813,7 +1854,7 @@ const styles = StyleSheet.create({
     alignItems: "stretch",
     backgroundColor: colors.surface,
     borderColor: "#ECECEC",
-    borderRadius: 20,
+    borderRadius: CARD_RADIUS,
     borderWidth: 1,
     minHeight: 82,
     paddingHorizontal: spacing.md,
@@ -1921,7 +1962,7 @@ const styles = StyleSheet.create({
   },
   loopCard: {
     backgroundColor: "#E5E5E5",
-    borderRadius: 34,
+    borderRadius: CARD_RADIUS,
     paddingHorizontal: spacing.sm,
     paddingBottom: spacing.sm,
     paddingTop: spacing.sm,
@@ -1929,7 +1970,7 @@ const styles = StyleSheet.create({
   },
   loopBackgroundDismissTap: {
     ...StyleSheet.absoluteFillObject,
-    borderRadius: 34,
+    borderRadius: CARD_RADIUS,
   },
   loopSteps: {
     gap: spacing.xs,
@@ -1937,7 +1978,7 @@ const styles = StyleSheet.create({
   loopStepCard: {
     alignItems: "stretch",
     backgroundColor: colors.surface,
-    borderRadius: 26,
+    borderRadius: CARD_RADIUS,
     minHeight: 82,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
@@ -2006,7 +2047,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     bottom: spacing.sm,
-    gap: spacing.lg,
+    gap: 8,
     left: spacing.xl,
     position: "absolute",
     right: spacing.xl,
@@ -2132,21 +2173,6 @@ const styles = StyleSheet.create({
     fontSize: 30,
     fontWeight: "300",
     lineHeight: 30,
-  },
-  saveButton: {
-    alignItems: "center",
-    backgroundColor: colors.primaryGradientStart,
-    borderRadius: radius.pill,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    minHeight: 58,
-    paddingHorizontal: spacing.xl,
-    width: "100%",
-  },
-  saveLabel: {
-    color: colors.surface,
-    fontSize: 18,
-    fontWeight: "700",
   },
   invalidState: {
     alignItems: "center",

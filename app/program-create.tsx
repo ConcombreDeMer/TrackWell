@@ -1,11 +1,12 @@
 import { useRouter } from "expo-router";
+import { useRef } from "react";
 import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { ProgramDraftCalendar } from "../components/programs/ProgramDraftCalendar";
 import { getCourseForDay, getDayName, useProgramsStore } from "../features/programs";
 import { colors, spacing } from "../theme";
+import { ActionCardButton } from "../ui/ActionCardButton";
 import { CounterField } from "../ui/CounterField";
-import { PrimaryButton } from "../ui/PrimaryButton";
 import { SectionCard } from "../ui/SectionCard";
 import { SquircleButton } from "../ui/Squircle";
 import { TextField } from "../ui/TextField";
@@ -25,6 +26,8 @@ export default function ProgramCreateScreen() {
     (count, week) => count + week.courses.length,
     0,
   );
+  const initialDraftSnapshot = useRef(serializeProgramDraft(programDraft));
+  const hasUnsavedChanges = serializeProgramDraft(programDraft) !== initialDraftSnapshot.current;
 
   function handleSaveProgram() {
     if (!programDraft.name.trim()) {
@@ -41,8 +44,27 @@ export default function ProgramCreateScreen() {
   }
 
   function handleClose() {
-    resetProgramDraft();
-    router.back();
+    if (!hasUnsavedChanges) {
+      resetProgramDraft();
+      router.back();
+      return;
+    }
+
+    Alert.alert(
+      "Discard changes?",
+      "No changes will be saved if you leave this screen now.",
+      [
+        { style: "cancel", text: "Keep editing" },
+        {
+          style: "destructive",
+          text: "Discard",
+          onPress: () => {
+            resetProgramDraft();
+            router.back();
+          },
+        },
+      ],
+    );
   }
 
   return (
@@ -153,13 +175,43 @@ export default function ProgramCreateScreen() {
         )}
       </SectionCard>
 
-      <PrimaryButton
-        label={isEditing ? "Save Program" : "Create Program"}
-        onPress={handleSaveProgram}
-      />
-      <PrimaryButton label="Close" onPress={handleClose} variant="secondary" />
+      <View style={styles.ctaGroup}>
+        <ActionCardButton
+          iconName={isEditing ? "pencil" : "add"}
+          label={isEditing ? "Save Program" : "Create Program"}
+          onPress={handleSaveProgram}
+          variant="dark"
+        />
+        <ActionCardButton
+          iconName="close-outline"
+          label="Cancel"
+          onPress={handleClose}
+          variant="light"
+        />
+      </View>
     </ScrollView>
   );
+}
+
+function serializeProgramDraft(programDraft: ReturnType<typeof useProgramsStore>["programDraft"]) {
+  return JSON.stringify({
+    description: programDraft.description,
+    name: programDraft.name,
+    numberOfWeeks: programDraft.numberOfWeeks,
+    weeks: programDraft.weeks.map((week) => ({
+      courses: week.courses.map((course) => ({
+        completed: course.completed,
+        dayOfWeek: course.dayOfWeek,
+        feedback: course.feedback ?? null,
+        name: course.name,
+        steps: course.steps.map((step) => ({
+          durationSeconds: step.durationSeconds,
+          type: step.type,
+        })),
+      })),
+      index: week.index,
+    })),
+  });
 }
 
 const styles = StyleSheet.create({
@@ -173,6 +225,9 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
     padding: spacing.xl,
     paddingBottom: 48,
+  },
+  ctaGroup: {
+    gap: 8,
   },
   hero: {
     alignItems: "center",

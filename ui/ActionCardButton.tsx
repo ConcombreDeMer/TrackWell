@@ -22,20 +22,11 @@ export function ActionCardButton({
   return (
     <SquircleButton
       onPress={onPress}
-      style={[
-        styles.base,
-        dark ? styles.dark : styles.light,
-      ]}
+      style={[styles.base, dark ? styles.dark : styles.light]}
     >
-      <Text style={[styles.label, dark ? styles.darkLabel : styles.lightLabel]}>
-        {label}
-      </Text>
+      <Text style={[styles.label, dark ? styles.darkLabel : styles.lightLabel]}>{label}</Text>
       <View style={styles.iconWrap}>
-        <Ionicons
-          color={dark ? colors.surface : colors.text}
-          name={iconName}
-          size={28}
-        />
+        <Ionicons color={dark ? colors.surface : colors.text} name={iconName} size={28} />
       </View>
     </SquircleButton>
   );
