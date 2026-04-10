@@ -37,6 +37,16 @@ export default function HomeScreen() {
           {nextCourse ? (
             <NextCourseCard
               course={nextCourse.course}
+              onPress={() =>
+                router.push({
+                  pathname: "/course",
+                  params: {
+                    programId: selectedProgram.id,
+                    weekIndex: String(nextCourse.weekIndex),
+                    courseId: nextCourse.course.id,
+                  },
+                })
+              }
               onPlayPress={() =>
                 router.push({
                   pathname: "/chrono",

@@ -2,6 +2,7 @@ export { ProgramsStoreProvider, useProgramsStore } from "./programs-store";
 export type {
   Course,
   CourseFeedback,
+  CourseProgress,
   DayOfWeek,
   DifficultyLevel,
   PainLevel,

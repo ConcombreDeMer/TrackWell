@@ -14,11 +14,12 @@ export default function HistoryScreen() {
   const router = useRouter();
   const { programs } = useProgramsStore();
 
-  const completedCourses = programs.flatMap((program) =>
+  const historyCourses = programs.flatMap((program) =>
     getChronologicalCourses(program)
-      .filter(({ course }) => course.completed)
+      .filter(({ course }) => course.completed || !!course.feedback || !!course.progress)
       .map(({ course, weekIndex }) => ({
         course,
+        isPartial: !course.completed,
         program,
         weekIndex,
       })),
@@ -28,16 +29,17 @@ export default function HistoryScreen() {
     <ScrollView contentContainerStyle={styles.content} style={styles.screen}>
       <Text style={styles.title}>History</Text>
 
-      {completedCourses.length === 0 ? (
+      {historyCourses.length === 0 ? (
         <SquircleView style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>No completed courses yet</Text>
+          <Text style={styles.emptyTitle}>No courses in history yet</Text>
           <Text style={styles.emptyText}>
-            Completed courses will appear here once you start progressing through a program.
+            Completed and partial courses will appear here once you start progressing through a
+            program.
           </Text>
         </SquircleView>
       ) : (
         <View style={styles.list}>
-          {completedCourses.map(({ course, program, weekIndex }) => (
+          {historyCourses.map(({ course, isPartial, program, weekIndex }) => (
             <SquircleButton
               key={course.id}
               onPress={() =>
@@ -61,6 +63,11 @@ export default function HistoryScreen() {
                   {formatDurationFromSeconds(getCourseDurationSeconds(course))}
                 </Text>
               </View>
+              <SquircleView style={[styles.statusBadge, isPartial && styles.statusBadgePartial]}>
+                <Text style={[styles.statusBadgeText, isPartial && styles.statusBadgeTextPartial]}>
+                  {isPartial ? "Partial" : "Done"}
+                </Text>
+              </SquircleView>
             </SquircleButton>
           ))}
         </View>
@@ -122,6 +129,26 @@ const styles = StyleSheet.create({
   cardBody: {
     flex: 1,
     gap: 4,
+  },
+  statusBadge: {
+    alignItems: "center",
+    backgroundColor: colors.primaryGradientStart,
+    borderRadius: radius.pill,
+    justifyContent: "center",
+    minWidth: 74,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  statusBadgePartial: {
+    backgroundColor: "#F3E0BF",
+  },
+  statusBadgeText: {
+    color: colors.surface,
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  statusBadgeTextPartial: {
+    color: "#8A5A1F",
   },
   cardTitle: {
     color: colors.text,

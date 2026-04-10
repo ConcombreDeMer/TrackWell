@@ -1,22 +1,28 @@
 import { Ionicons } from "@expo/vector-icons";
-import { StyleSheet, Text, View } from "react-native";
+import { GestureResponderEvent, StyleSheet, Text, View } from "react-native";
 
 import { Course, Program, formatDurationFromSeconds, getCourseDurationSeconds } from "../../features/programs";
 import { colors, radius, spacing } from "../../theme";
-import { SquircleButton, SquircleView } from "../../ui/Squircle";
+import { SquircleButton } from "../../ui/Squircle";
 
 type NextCourseCardProps = {
   course: Course;
+  onPress: () => void;
   onPlayPress: () => void;
   program: Program;
   weekIndex: number;
 };
 
-export function NextCourseCard({ course, onPlayPress, weekIndex }: NextCourseCardProps) {
+export function NextCourseCard({ course, onPlayPress, onPress, weekIndex }: NextCourseCardProps) {
+  function handlePlayPress(event: GestureResponderEvent) {
+    event.stopPropagation();
+    onPlayPress();
+  }
+
   return (
     <View style={styles.wrapper}>
       <Text style={styles.heading}>Prochaine course</Text>
-      <SquircleView style={styles.card}>
+      <SquircleButton onPress={onPress} style={styles.card}>
         <View style={styles.textBlock}>
           <Text style={styles.title}>
             Semaine {weekIndex} - {course.name}
@@ -26,12 +32,12 @@ export function NextCourseCard({ course, onPlayPress, weekIndex }: NextCourseCar
           </Text>
         </View>
         <SquircleButton
-          onPress={onPlayPress}
+          onPress={handlePlayPress}
           style={styles.iconBox}
         >
           <Ionicons color={colors.surface} name="play" size={24} />
         </SquircleButton>
-      </SquircleView>
+      </SquircleButton>
     </View>
   );
 }

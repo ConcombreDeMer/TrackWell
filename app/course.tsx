@@ -69,6 +69,10 @@ export default function CourseScreen() {
 
   const selectedSource = source;
   const groups = groupCourseSteps(selectedSource.course.steps);
+  const isPartialCourse =
+    !isDraftFlow &&
+    !selectedSource.course.completed &&
+    (!!selectedSource.course.feedback || !!selectedSource.course.progress);
 
   function handleEdit() {
     router.replace({
@@ -191,9 +195,17 @@ export default function CourseScreen() {
           {!isDraftFlow && selectedSource.course.feedback ? (
             <View style={styles.feedbackWrap}>
             <View style={styles.feedbackTopRow}>
-                <SquircleView style={styles.completedBadge}>
-                  <Text style={styles.completedBadgeText}>Done</Text>
-                  <Ionicons color={colors.surface} name="checkmark" size={24} />
+                <SquircleView
+                  style={[styles.completedBadge, isPartialCourse && styles.partialBadge]}
+                >
+                  <Text style={styles.completedBadgeText}>
+                    {isPartialCourse ? "Partial" : "Done"}
+                  </Text>
+                  <Ionicons
+                    color={colors.surface}
+                    name={isPartialCourse ? "remove-circle-outline" : "checkmark"}
+                    size={24}
+                  />
                 </SquircleView>
                 <View style={styles.feedbackActions}>
                   <SquircleButton
@@ -610,6 +622,9 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     minHeight: 58,
     paddingHorizontal: spacing.lg,
+  },
+  partialBadge: {
+    backgroundColor: "#E4A35A",
   },
   completedBadgeText: {
     color: colors.surface,

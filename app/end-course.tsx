@@ -29,15 +29,17 @@ const painOptions: { label: string; value: PainLevel }[] = [
 
 export default function EndCourseScreen() {
   const router = useRouter();
-  const { courseId, edit, programId, weekIndex } = useLocalSearchParams<{
+  const { courseId, edit, partial, programId, weekIndex } = useLocalSearchParams<{
     courseId?: string;
     edit?: string;
+    partial?: string;
     programId?: string;
     weekIndex?: string;
   }>();
   const { getProgramById, saveCourseFeedback } = useProgramsStore();
 
   const isEditingFeedback = edit === "true";
+  const isPartialEnd = partial === "true";
   const parsedWeekIndex = Number(weekIndex);
   const program = programId ? getProgramById(programId) : undefined;
   const week = program?.weeks.find((item) => item.index === parsedWeekIndex);
@@ -71,7 +73,7 @@ export default function EndCourseScreen() {
       difficulty,
       feeling,
       pain,
-    });
+    }, !isPartialEnd);
 
     if (isEditingFeedback) {
       router.back();
@@ -93,9 +95,25 @@ export default function EndCourseScreen() {
       <BackButton />
 
       <View style={styles.header}>
-        <Text style={styles.title}>{isEditingFeedback ? "Edit Course" : "End Course"}</Text>
+        <Text style={styles.title}>
+          {isEditingFeedback ? "Edit Course" : isPartialEnd ? "Save Partial Workout" : "End Course"}
+        </Text>
         <Text style={styles.subtitle}>{selectedCourse.name} from {selectedProgram.name}</Text>
+        {isPartialEnd ? (
+          <SquircleView style={styles.partialBadge}>
+            <Text style={styles.partialBadgeText}>Not completed</Text>
+          </SquircleView>
+        ) : null}
       </View>
+
+      {isPartialEnd ? (
+        <SectionCard>
+          <Text style={styles.helper}>
+            You can save your difficulty, pain, and feeling as usual. This workout will stay marked
+            as not completed.
+          </Text>
+        </SectionCard>
+      ) : null}
 
       <SectionCard>
         <Text style={styles.sectionTitle}>Level of difficulty</Text>
@@ -130,7 +148,10 @@ export default function EndCourseScreen() {
         <FeelingInput onChangeText={setFeeling} value={feeling} />
       </SectionCard>
 
-      <PrimaryButton label={isEditingFeedback ? "Save" : "Validate"} onPress={handleValidate} />
+      <PrimaryButton
+        label={isEditingFeedback ? "Save" : isPartialEnd ? "Save Progress" : "Validate"}
+        onPress={handleValidate}
+      />
     </ScrollView>
   );
 }
@@ -188,6 +209,19 @@ const styles = StyleSheet.create({
   },
   header: {
     gap: 4,
+  },
+  partialBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radius.pill,
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  partialBadgeText: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: "700",
   },
   title: {
     color: colors.text,

@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -15,7 +16,7 @@ import {
   useProgramsStore,
 } from "../features/programs";
 import { colors, radius, spacing } from "../theme";
-import { PrimaryButton } from "../ui/PrimaryButton";
+import { ActionCardButton } from "../ui/ActionCardButton";
 import { SectionCard } from "../ui/SectionCard";
 import { SquircleButton, SquircleView } from "../ui/Squircle";
 
@@ -24,6 +25,7 @@ export default function ProgramScreen() {
   const [showCompleted, setShowCompleted] = useState(false);
   const { programId } = useLocalSearchParams<{ programId?: string }>();
   const {
+    clearSelectedProgram,
     deleteProgram,
     getProgramById,
     selectProgram,
@@ -72,6 +74,11 @@ export default function ProgramScreen() {
   }
 
   function handleSelectProgram() {
+    if (isSelectedProgram) {
+      clearSelectedProgram();
+      return;
+    }
+
     if (selectedProgramId && selectedProgramId !== selectedProgram.id) {
       Alert.alert(
         "Replace selected program",
@@ -108,10 +115,12 @@ export default function ProgramScreen() {
       </SectionCard>
 
       <View style={styles.actions}>
-        <PrimaryButton
+        <ActionCardButton
+          animateContentChange
+          iconName={isSelectedProgram ? "bookmark" : "bookmark-outline"}
           label={isSelectedProgram ? "Program Selected" : "Select Program"}
           onPress={handleSelectProgram}
-          variant={isSelectedProgram ? "success" : "primary"}
+          variant={isSelectedProgram ? "dark" : "muted"}
         />
       </View>
 
@@ -171,7 +180,10 @@ export default function ProgramScreen() {
             </SquircleView>
           ) : (
             <View style={styles.courseList}>
-              {week.courses.map((course, index) => (
+              {week.courses.map((course, index) => {
+                const isPartialCourse = !course.completed && (!!course.feedback || !!course.progress);
+
+                return (
                 <SquircleButton
                   key={course.id}
                   onPress={() =>
@@ -184,10 +196,7 @@ export default function ProgramScreen() {
                         },
                     })
                   }
-                  style={[
-                    styles.courseCard,
-                    course.completed && styles.courseCardCompleted,
-                  ]}
+                  style={styles.courseCard}
                 >
                   <View style={styles.courseBody}>
                     <Text style={styles.courseTitle}>{course.name || `Course ${index + 1}`}</Text>
@@ -196,8 +205,24 @@ export default function ProgramScreen() {
                       {formatDurationFromSeconds(getCourseDurationSeconds(course))}
                     </Text>
                   </View>
+                  {course.completed ? (
+                    <Ionicons
+                      color={colors.success}
+                      name="checkmark-circle"
+                      size={24}
+                      style={styles.courseCompletedIcon}
+                    />
+                  ) : isPartialCourse ? (
+                    <MaterialCommunityIcons
+                      color="#E4A35A"
+                      name="waves"
+                      size={24}
+                      style={styles.courseCompletedIcon}
+                    />
+                  ) : null}
                 </SquircleButton>
-              ))}
+                );
+              })}
             </View>
           )}
         </SectionCard>
@@ -322,11 +347,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     padding: spacing.md,
   },
-  courseCardCompleted: {
-    backgroundColor: colors.success,
-  },
   courseBody: {
     flex: 1,
+  },
+  courseCompletedIcon: {
+    flexShrink: 0,
   },
   courseTitle: {
     color: colors.text,

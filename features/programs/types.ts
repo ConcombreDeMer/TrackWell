@@ -10,6 +10,12 @@ export interface CourseFeedback {
   feeling: string;
 }
 
+export interface CourseProgress {
+  currentStepIndex: number;
+  remainingSeconds: number;
+  savedAt: string;
+}
+
 export interface Step {
   id: string;
   type: StepType;
@@ -21,6 +27,7 @@ export interface Course {
   name: string;
   completed: boolean;
   feedback?: CourseFeedback;
+  progress?: CourseProgress;
   dayOfWeek: DayOfWeek;
   steps: Step[];
 }

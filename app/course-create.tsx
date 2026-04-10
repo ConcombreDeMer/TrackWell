@@ -27,9 +27,9 @@ import { ActionCardButton } from "../ui/ActionCardButton";
 import { SquircleButton, SquircleView } from "../ui/Squircle";
 
 type DraftStep = {
+  durationSeconds: number;
   id: string;
   type: StepType;
-  durationMinutes: number;
 };
 
 type BuilderItem =
@@ -65,6 +65,7 @@ const DELETE_CLOSE_THRESHOLD = DELETE_ACTION_WIDTH * 0.72;
 const DURATION_REPEAT_INITIAL_DELAY_MS = 260;
 const DURATION_REPEAT_INTERVAL_MS = 90;
 const CARD_RADIUS = 24;
+const SHORT_DURATION_SECONDS = [10, 20, 30, 45] as const;
 const AnimatedSquircleView = Animated.createAnimatedComponent(SquircleView);
 
 if (UIManager.setLayoutAnimationEnabledExperimental) {
@@ -188,7 +189,7 @@ export default function CourseCreateScreen() {
       weekIndex: parsedWeekIndex,
       steps: flattenBuilderItems(items).map((step) => ({
         type: step.type,
-        durationSeconds: step.durationMinutes * 60,
+        durationSeconds: step.durationSeconds,
       })),
     };
 
@@ -229,6 +230,16 @@ export default function CourseCreateScreen() {
         },
       ],
     );
+  }
+
+  function closeExpandedEditors() {
+    if (!expandedStepId && !expandedLoopId) {
+      return;
+    }
+
+    LayoutAnimation.configureNext(getBouncyLayoutAnimation());
+    setExpandedStepId(null);
+    setExpandedLoopId(null);
   }
 
   function removeItem(itemId: string) {
@@ -292,7 +303,7 @@ export default function CourseCreateScreen() {
               ...item,
               step: {
                 ...item.step,
-                durationMinutes: Math.max(1, item.step.durationMinutes + delta),
+                durationSeconds: getNextDurationSeconds(item.step.durationSeconds, delta),
               },
             }
           : item,
@@ -380,7 +391,7 @@ export default function CourseCreateScreen() {
           index === stepIndex
             ? {
                 ...step,
-                durationMinutes: Math.max(1, step.durationMinutes + delta),
+                durationSeconds: getNextDurationSeconds(step.durationSeconds, delta),
               }
             : step,
         );
@@ -570,18 +581,20 @@ export default function CourseCreateScreen() {
     <SafeAreaView edges={["top", "bottom"]} style={styles.screen}>
       <View style={styles.layout}>
         <View style={[styles.mainContent, menuVisible && styles.dimmedContent]}>
-          <View style={styles.hero}>
-            <Text style={styles.heroTitle}>{isEditing ? "Edit" : "Create"}</Text>
-            <Text style={styles.heroSubtitle}>course</Text>
-            <Text style={styles.contextLabel}>{contextLabel}</Text>
-          </View>
+          <Pressable onPress={closeExpandedEditors} style={styles.heroDismissArea}>
+            <View pointerEvents="none" style={styles.hero}>
+              <Text style={styles.heroTitle}>{isEditing ? "Edit" : "Create"}</Text>
+              <Text style={styles.heroSubtitle}>course</Text>
+              <Text style={styles.contextLabel}>{contextLabel}</Text>
+            </View>
+          </Pressable>
 
           <View style={styles.builderArea}>
             {items.length === 0 ? (
-              <View style={styles.emptyState}>
+              <Pressable onPress={closeExpandedEditors} style={styles.emptyState}>
                 <Text style={styles.emptyText}>Add a step to your course</Text>
                 <Text style={styles.emptyHint}>Press and hold the + button to choose a step or a loop.</Text>
-              </View>
+              </Pressable>
             ) : (
               <ScrollView
                 contentContainerStyle={styles.itemsContent}
@@ -647,6 +660,7 @@ export default function CourseCreateScreen() {
                     </SwipeToDeleteRow>
                   ),
                 )}
+                <Pressable onPress={closeExpandedEditors} style={styles.itemsDismissArea} />
               </ScrollView>
             )}
           </View>
@@ -745,7 +759,7 @@ function BuilderStepCard({
         <CompactStepRow step={step} />
         {expanded ? (
           <StepEditor
-            durationMinutes={step.durationMinutes}
+            durationSeconds={step.durationSeconds}
             onDuplicate={onDuplicate}
             onDecrease={() => onDurationChange(-1)}
             onIncrease={() => onDurationChange(1)}
@@ -838,7 +852,7 @@ function BuilderLoopCard({
                   <CompactStepRow step={step} />
                   {expandedStepId === step.id ? (
                     <StepEditor
-                      durationMinutes={step.durationMinutes}
+                      durationSeconds={step.durationSeconds}
                       onDecrease={() => onLoopStepDurationChange(item.id, index, -1)}
                       onIncrease={() => onLoopStepDurationChange(item.id, index, 1)}
                       onSelectType={(type) => onLoopStepTypeChange(item.id, index, type)}
@@ -966,20 +980,22 @@ function CompactStepRow({ step }: { step: DraftStep }) {
           {step.type === "walk" ? "Walk" : "Run"}
         </Animated.Text>
       </View>
-      <Text numberOfLines={1} style={styles.stepDuration}>{step.durationMinutes} min</Text>
+      <Text numberOfLines={1} style={styles.stepDuration}>
+        {formatBuilderDuration(step.durationSeconds)}
+      </Text>
     </View>
   );
 }
 
 function StepEditor({
-  durationMinutes,
+  durationSeconds,
   onDuplicate,
   onDecrease,
   onIncrease,
   onSelectType,
   type,
 }: {
-  durationMinutes: number;
+  durationSeconds: number;
   onDuplicate?: () => void;
   onDecrease: () => void;
   onIncrease: () => void;
@@ -1002,7 +1018,7 @@ function StepEditor({
       </View>
       <View style={styles.durationEditorRow}>
         <RepeatingIconButton label="−" onStep={onDecrease} />
-        <Text style={styles.durationEditorValue}>{durationMinutes} min</Text>
+        <Text style={styles.durationEditorValue}>{formatBuilderDuration(durationSeconds)}</Text>
         <RepeatingIconButton label="+" onStep={onIncrease} />
       </View>
       {onDuplicate ? (
@@ -1541,8 +1557,8 @@ function groupExistingSteps(
           kind: "loop",
           repeatCount,
           steps: [
-            createDraftStep(first.type, Math.max(1, Math.round(first.durationSeconds / 60))),
-            createDraftStep(second.type, Math.max(1, Math.round(second.durationSeconds / 60))),
+            createDraftStep(first.type, first.durationSeconds),
+            createDraftStep(second.type, second.durationSeconds),
           ],
         });
         index += repeatCount * 2;
@@ -1553,7 +1569,7 @@ function groupExistingSteps(
     items.push({
       id: createBuilderId("step"),
       kind: "step",
-      step: createDraftStep(first.type, Math.max(1, Math.round(first.durationSeconds / 60))),
+      step: createDraftStep(first.type, first.durationSeconds),
     });
     index += 1;
   }
@@ -1578,7 +1594,7 @@ function serializeBuilderItems(items: BuilderItem[]) {
         ? {
             kind: item.kind,
             step: {
-              durationMinutes: item.step.durationMinutes,
+              durationSeconds: item.step.durationSeconds,
               type: item.step.type,
             },
           }
@@ -1586,7 +1602,7 @@ function serializeBuilderItems(items: BuilderItem[]) {
             kind: item.kind,
             repeatCount: item.repeatCount,
             steps: item.steps.map((step) => ({
-              durationMinutes: step.durationMinutes,
+              durationSeconds: step.durationSeconds,
               type: step.type,
             })),
           },
@@ -1598,7 +1614,7 @@ function createStepItem(index: number): BuilderItem {
   return {
     id: createBuilderId(`step-item-${index}`),
     kind: "step",
-    step: createDraftStep("walk", 5),
+    step: createDraftStep("walk", 5 * 60),
   };
 }
 
@@ -1607,7 +1623,7 @@ function createLoopItem(index: number): BuilderItem {
     id: createBuilderId(`loop-item-${index}`),
     kind: "loop",
     repeatCount: 3,
-    steps: [createDraftStep("run", 1), createDraftStep("walk", 1)],
+    steps: [createDraftStep("run", 60), createDraftStep("walk", 60)],
   };
 }
 
@@ -1615,12 +1631,70 @@ function createBuilderId(prefix: string) {
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-function createDraftStep(type: StepType, durationMinutes: number): DraftStep {
+function createDraftStep(type: StepType, durationSeconds: number): DraftStep {
   return {
-    durationMinutes,
+    durationSeconds: normalizeDurationSeconds(durationSeconds),
     id: createBuilderId(`draft-${type}`),
     type,
   };
+}
+
+function normalizeDurationSeconds(durationSeconds: number) {
+  const roundedDuration = Math.max(10, Math.round(durationSeconds));
+
+  if (roundedDuration < 60) {
+    return (
+      SHORT_DURATION_SECONDS.reduce((closest, value) =>
+        Math.abs(value - roundedDuration) < Math.abs(closest - roundedDuration) ? value : closest,
+      ) ?? 10
+    );
+  }
+
+  return Math.max(60, Math.round(roundedDuration / 60) * 60);
+}
+
+function getNextDurationSeconds(currentDurationSeconds: number, delta: number) {
+  if (delta === 0) {
+    return currentDurationSeconds;
+  }
+
+  const direction = delta > 0 ? 1 : -1;
+  let nextDuration = normalizeDurationSeconds(currentDurationSeconds);
+
+  for (let index = 0; index < Math.abs(delta); index += 1) {
+    if (direction > 0) {
+      if (nextDuration < 45) {
+        nextDuration =
+          SHORT_DURATION_SECONDS.find((value) => value > nextDuration) ?? 45;
+      } else if (nextDuration === 45) {
+        nextDuration = 60;
+      } else {
+        nextDuration += 60;
+      }
+    } else if (nextDuration <= 60) {
+      nextDuration =
+        [...SHORT_DURATION_SECONDS].reverse().find((value) => value < nextDuration) ?? 10;
+    } else {
+      nextDuration = Math.max(60, nextDuration - 60);
+    }
+  }
+
+  return nextDuration;
+}
+
+function formatBuilderDuration(durationSeconds: number) {
+  if (durationSeconds < 60) {
+    return `${durationSeconds} sec`;
+  }
+
+  const minutes = Math.floor(durationSeconds / 60);
+  const seconds = durationSeconds % 60;
+
+  if (seconds === 0) {
+    return `${minutes} min`;
+  }
+
+  return `${minutes} min ${seconds}s`;
 }
 
 function clearLongPressTimer(timerRef: { current: ReturnType<typeof setTimeout> | null }) {
@@ -1781,6 +1855,9 @@ const styles = StyleSheet.create({
     gap: 2,
     paddingTop: spacing.sm,
   },
+  heroDismissArea: {
+    borderRadius: CARD_RADIUS,
+  },
   heroTitle: {
     color: colors.text,
     fontSize: 48,
@@ -1823,8 +1900,13 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   itemsContent: {
+    flexGrow: 1,
     gap: spacing.xs,
     paddingBottom: 240,
+  },
+  itemsDismissArea: {
+    flex: 1,
+    minHeight: 140,
   },
   swipeRow: {
     overflow: "hidden",

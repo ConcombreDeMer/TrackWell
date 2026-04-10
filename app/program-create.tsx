@@ -37,6 +37,11 @@ export default function ProgramCreateScreen() {
 
     const program = saveProgramDraft();
 
+    if (isEditing) {
+      router.back();
+      return;
+    }
+
     router.replace({
       pathname: "/program",
       params: { programId: program.id },

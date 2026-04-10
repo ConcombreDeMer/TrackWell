@@ -1,6 +1,6 @@
 import { createContext, PropsWithChildren, useContext, useMemo, useState } from "react";
 
-import { CourseFeedback, CreateCourseInput, Program, ProgramDraft } from "./types";
+import { CourseFeedback, CourseProgress, CreateCourseInput, Program, ProgramDraft } from "./types";
 import {
   createCourse,
   createDraftFromProgram,
@@ -23,6 +23,7 @@ type ProgramsStoreValue = {
   saveProgramDraft: () => Program;
   deleteProgram: (programId: string) => void;
   selectProgram: (programId: string) => void;
+  clearSelectedProgram: () => void;
   setCourseCompleted: (
     programId: string,
     weekIndex: number,
@@ -34,6 +35,13 @@ type ProgramsStoreValue = {
     weekIndex: number,
     courseId: string,
     feedback: CourseFeedback,
+    completed?: boolean,
+  ) => void;
+  saveCourseProgress: (
+    programId: string,
+    weekIndex: number,
+    courseId: string,
+    progress?: CourseProgress,
   ) => void;
   updateCourseInProgram: (programId: string, input: CreateCourseInput & { courseId: string }) => void;
   deleteCourseFromProgram: (programId: string, weekIndex: number, courseId: string) => void;
@@ -69,6 +77,7 @@ export function ProgramsStoreProvider({ children }: PropsWithChildren) {
                               ...course,
                               completed,
                               feedback: completed ? course.feedback : undefined,
+                              progress: completed ? undefined : course.progress,
                             }
                           : course,
                       ),
@@ -86,6 +95,7 @@ export function ProgramsStoreProvider({ children }: PropsWithChildren) {
     weekIndex: number,
     courseId: string,
     feedback: CourseFeedback,
+    completed = true,
   ) {
     setPrograms((current) =>
       current.map((program) =>
@@ -98,7 +108,41 @@ export function ProgramsStoreProvider({ children }: PropsWithChildren) {
                       ...week,
                       courses: week.courses.map((course) =>
                         course.id === courseId
-                          ? { ...course, completed: true, feedback }
+                          ? { ...course, completed, feedback, progress: undefined }
+                          : course,
+                      ),
+                    }
+                  : week,
+              ),
+            }
+          : program,
+      ),
+    );
+  }
+
+  function saveCourseProgressInPrograms(
+    programId: string,
+    weekIndex: number,
+    courseId: string,
+    progress?: CourseProgress,
+  ) {
+    setPrograms((current) =>
+      current.map((program) =>
+        program.id === programId
+          ? {
+              ...program,
+              weeks: program.weeks.map((week) =>
+                week.index === weekIndex
+                  ? {
+                      ...week,
+                      courses: week.courses.map((course) =>
+                        course.id === courseId
+                          ? {
+                              ...course,
+                              completed: false,
+                              feedback: undefined,
+                              progress,
+                            }
                           : course,
                       ),
                     }
@@ -151,6 +195,7 @@ export function ProgramsStoreProvider({ children }: PropsWithChildren) {
               name:
                 existingCourse?.name ??
                 `Course ${courseCountBeforeWeek + week.courses.length + 1}`,
+              progress: existingCourse?.progress,
             };
             const nextCourses = week.courses.filter(
               (course) => course.dayOfWeek !== input.dayOfWeek,
@@ -186,6 +231,7 @@ export function ProgramsStoreProvider({ children }: PropsWithChildren) {
               feedback: existingCourse.feedback,
               id: existingCourse.id,
               name: existingCourse.name,
+              progress: existingCourse.progress,
             };
 
             return {
@@ -247,11 +293,17 @@ export function ProgramsStoreProvider({ children }: PropsWithChildren) {
       selectProgram(programId) {
         setSelectedProgramId(programId);
       },
+      clearSelectedProgram() {
+        setSelectedProgramId(undefined);
+      },
       setCourseCompleted(programId, weekIndex, courseId, completed) {
         setCourseCompletedInPrograms(programId, weekIndex, courseId, completed);
       },
-      saveCourseFeedback(programId, weekIndex, courseId, feedback) {
-        saveCourseFeedbackInPrograms(programId, weekIndex, courseId, feedback);
+      saveCourseFeedback(programId, weekIndex, courseId, feedback, completed = true) {
+        saveCourseFeedbackInPrograms(programId, weekIndex, courseId, feedback, completed);
+      },
+      saveCourseProgress(programId, weekIndex, courseId, progress) {
+        saveCourseProgressInPrograms(programId, weekIndex, courseId, progress);
       },
       updateCourseInProgram(programId, input) {
         setPrograms((current) =>
@@ -280,6 +332,7 @@ export function ProgramsStoreProvider({ children }: PropsWithChildren) {
                   feedback: existingCourse.feedback,
                   id: existingCourse.id,
                   name: existingCourse.name,
+                  progress: existingCourse.progress,
                 };
 
                 return {

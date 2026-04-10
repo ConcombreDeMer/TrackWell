@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { ProgramSummaryCard } from "../../components/programs/ProgramSummaryCard";
 import { useProgramsStore } from "../../features/programs";
@@ -9,7 +9,7 @@ import { SquircleView } from "../../ui/Squircle";
 
 export default function ProgramsScreen() {
   const router = useRouter();
-  const { programs, resetProgramDraft, selectedProgramId } = useProgramsStore();
+  const { clearSelectedProgram, programs, resetProgramDraft, selectedProgramId } = useProgramsStore();
 
   return (
     <ScrollView contentContainerStyle={styles.content} style={styles.screen}>
@@ -41,6 +41,19 @@ export default function ProgramsScreen() {
             <ProgramSummaryCard
               isSelected={program.id === selectedProgramId}
               key={program.id}
+              onBookmarkPress={() =>
+                Alert.alert(
+                  "Deselect program?",
+                  `Do you want to deselect "${program.name}"?`,
+                  [
+                    { style: "cancel", text: "No" },
+                    {
+                      text: "Yes",
+                      onPress: () => clearSelectedProgram(),
+                    },
+                  ],
+                )
+              }
               onPress={() =>
                 router.push({
                   pathname: "/program",
