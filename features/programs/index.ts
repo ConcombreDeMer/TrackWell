@@ -1,4 +1,8 @@
 export { ProgramsStoreProvider, useProgramsStore } from "./programs-store";
+export {
+  loadProgramsStorageSnapshot,
+  saveProgramsStorageSnapshot,
+} from "./local-storage";
 export type {
   Course,
   CourseFeedback,
@@ -12,6 +16,20 @@ export type {
   StepType,
   Week,
 } from "./types";
+export type {
+  CourseAggregateRecord,
+  CourseFeedbackRow,
+  CourseProgressRow,
+  DatabaseId,
+  ISODateTimeString,
+  ProgramAggregateRecord,
+  ProgramRow,
+  ProgramsDatabaseSchema,
+  RemoteDatabaseTables,
+  StepRow,
+  WeekRow,
+  CourseRow,
+} from "./storage-schema";
 export {
   createDraftFromProgram,
   formatDurationFromSeconds,

@@ -1,5 +1,9 @@
-import { createContext, PropsWithChildren, useContext, useMemo, useState } from "react";
+import { createContext, PropsWithChildren, useContext, useEffect, useMemo, useState } from "react";
 
+import {
+  loadProgramsStorageSnapshot,
+  saveProgramsStorageSnapshot,
+} from "./local-storage";
 import { CourseFeedback, CourseProgress, CreateCourseInput, Program, ProgramDraft } from "./types";
 import {
   createCourse,
@@ -10,6 +14,7 @@ import {
 } from "./utils";
 
 type ProgramsStoreValue = {
+  isHydrated: boolean;
   programs: Program[];
   selectedProgramId?: string;
   programDraft: ProgramDraft;
@@ -52,9 +57,50 @@ type ProgramsStoreValue = {
 const ProgramsStoreContext = createContext<ProgramsStoreValue | null>(null);
 
 export function ProgramsStoreProvider({ children }: PropsWithChildren) {
+  const [isHydrated, setIsHydrated] = useState(false);
   const [programs, setPrograms] = useState<Program[]>([]);
   const [selectedProgramId, setSelectedProgramId] = useState<string | undefined>(undefined);
   const [programDraft, setProgramDraft] = useState<ProgramDraft>(createInitialProgramDraft);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function hydrateStore() {
+      const snapshot = await loadProgramsStorageSnapshot();
+
+      if (!isMounted) {
+        return;
+      }
+
+      if (snapshot) {
+        setPrograms(snapshot.programs);
+        setSelectedProgramId(snapshot.selectedProgramId);
+        setProgramDraft(snapshot.programDraft);
+      }
+
+      setIsHydrated(true);
+    }
+
+    void hydrateStore();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isHydrated) {
+      return;
+    }
+
+    void saveProgramsStorageSnapshot({
+      version: 1,
+      savedAt: new Date().toISOString(),
+      programs,
+      selectedProgramId,
+      programDraft,
+    });
+  }, [isHydrated, programDraft, programs, selectedProgramId]);
 
   function setCourseCompletedInPrograms(
     programId: string,
@@ -156,6 +202,7 @@ export function ProgramsStoreProvider({ children }: PropsWithChildren) {
 
   const value = useMemo<ProgramsStoreValue>(() => {
     return {
+      isHydrated,
       programs,
       selectedProgramId,
       programDraft,
@@ -375,7 +422,7 @@ export function ProgramsStoreProvider({ children }: PropsWithChildren) {
           : undefined;
       },
     };
-  }, [programDraft, programs, selectedProgramId]);
+  }, [isHydrated, programDraft, programs, selectedProgramId]);
 
   return <ProgramsStoreContext.Provider value={value}>{children}</ProgramsStoreContext.Provider>;
 }
