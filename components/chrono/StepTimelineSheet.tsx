@@ -1,0 +1,279 @@
+import { Ionicons } from "@expo/vector-icons";
+import { BottomSheet, Host } from "@expo/ui/swift-ui";
+import {
+  Dimensions,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+
+import { Step, formatDurationFromSeconds } from "../../features/programs";
+import { colors, radius, spacing } from "../../theme";
+import { SquircleView } from "../../ui/Squircle";
+
+type StepTimelineSheetProps = {
+  completedStepsCount: number;
+  currentStepIndex: number;
+  progressPercent: number;
+  steps: Step[];
+  visible: boolean;
+  onClose: () => void;
+};
+
+export function StepTimelineSheet(props: StepTimelineSheetProps) {
+  if (Platform.OS === "ios") {
+    return <SwiftUIStepTimelineSheet {...props} />;
+  }
+
+  return <DefaultStepTimelineSheet {...props} />;
+}
+
+function SwiftUIStepTimelineSheet({
+  completedStepsCount,
+  currentStepIndex,
+  progressPercent,
+  steps,
+  visible,
+  onClose,
+}: StepTimelineSheetProps) {
+  const { width } = Dimensions.get("window");
+
+  return (
+    <Host style={[styles.host, { width }]}>
+      <BottomSheet
+        isOpened={visible}
+        onIsOpenedChange={(isOpened) => {
+          if (!isOpened) {
+            onClose();
+          }
+        }}
+        presentationDetents={[0.46, 0.72]}
+        presentationDragIndicator="visible"
+      >
+        <Host matchContents={{ horizontal: true, vertical: true }} style={styles.sheetHost}>
+          <StepTimelineContent
+            completedStepsCount={completedStepsCount}
+            currentStepIndex={currentStepIndex}
+            progressPercent={progressPercent}
+            steps={steps}
+          />
+        </Host>
+      </BottomSheet>
+    </Host>
+  );
+}
+
+function DefaultStepTimelineSheet({
+  completedStepsCount,
+  currentStepIndex,
+  progressPercent,
+  steps,
+  visible,
+  onClose,
+}: StepTimelineSheetProps) {
+  return (
+    <Modal animationType="slide" onRequestClose={onClose} transparent visible={visible}>
+      <View style={styles.modalRoot}>
+        <Pressable onPress={onClose} style={styles.backdrop} />
+        <View style={styles.defaultSheetWrap}>
+          <StepTimelineContent
+            completedStepsCount={completedStepsCount}
+            currentStepIndex={currentStepIndex}
+            progressPercent={progressPercent}
+            steps={steps}
+          />
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+function StepTimelineContent({
+  completedStepsCount,
+  currentStepIndex,
+  progressPercent,
+  steps,
+}: Omit<StepTimelineSheetProps, "visible" | "onClose">) {
+  const stepsToRender = steps.slice(currentStepIndex).map((step, offset) => ({
+    index: currentStepIndex + offset,
+    step,
+  }));
+  const completedLabel = `${completedStepsCount + 1}/${steps.length}`;
+
+  return (
+    <SquircleView style={styles.sheet}>
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.title}>Workout Steps</Text>
+        </View>
+
+        <Text style={styles.completedCount}>{completedLabel}</Text>
+      </View>
+
+      <ScrollView
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {stepsToRender.map(({ index, step }) => {
+          const isCurrent = index === currentStepIndex;
+          const label = step.type === "walk" ? "Walk" : "Run";
+          const iconName = step.type === "walk" ? "walk-outline" : "flash-outline";
+
+          return (
+            <SquircleView
+              key={step.id}
+              style={[styles.stepRow, isCurrent && styles.stepRowCurrent]}
+            >
+              <View style={styles.stepHead}>
+                <View style={styles.stepTitleRow}>
+                  <Ionicons
+                    color={isCurrent ? colors.surface : colors.text}
+                    name={iconName}
+                    size={18}
+                  />
+                  <Text style={[styles.stepLabel, isCurrent && styles.stepLabelCurrent]}>
+                    {label}
+                  </Text>
+                </View>
+
+                <Text
+                  style={[
+                    styles.stepIndex,
+                    isCurrent && styles.stepIndexCurrent,
+                  ]}
+                >
+                  Step {index + 1}
+                </Text>
+              </View>
+
+              <Text style={[styles.stepDuration, isCurrent && styles.stepDurationCurrent]}>
+                {formatDurationFromSeconds(step.durationSeconds)}
+              </Text>
+
+              {isCurrent ? (
+                <View style={styles.progressTrack}>
+                  <View
+                    style={[styles.progressFill, { width: `${Math.max(progressPercent, 2)}%` }]}
+                  />
+                </View>
+              ) : null}
+            </SquircleView>
+          );
+        })}
+      </ScrollView>
+    </SquircleView>
+  );
+}
+
+const styles = StyleSheet.create({
+  host: {
+    bottom: 0,
+    height: 1,
+    left: 0,
+    position: "absolute",
+    zIndex: 20,
+  },
+  modalRoot: {
+    flex: 1,
+    justifyContent: "flex-end",
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  sheetHost: {
+    width: "100%",
+  },
+  defaultSheetWrap: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
+  },
+  sheet: {
+    borderRadius: 34,
+    maxHeight: "100%",
+    minHeight: "42%",
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xl,
+  },
+  header: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: spacing.md,
+  },
+  title: {
+    color: colors.text,
+    fontSize: 28,
+    fontWeight: "800",
+    letterSpacing: -0.8,
+  },
+  completedCount: {
+    color: colors.textMuted,
+    fontSize: 14,
+    fontWeight: "700",
+    textAlign: "right",
+  },
+  listContent: {
+    gap: spacing.sm,
+    paddingBottom: spacing.md,
+  },
+  stepRow: {
+    backgroundColor: "#ffffff",
+    borderRadius: 22,
+    gap: 8,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+  },
+  stepRowCurrent: {
+    backgroundColor: colors.primaryGradientStart,
+  },
+  stepHead: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  stepTitleRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.xs,
+  },
+  stepLabel: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  stepLabelCurrent: {
+    color: colors.surface,
+  },
+  stepIndex: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  stepIndexCurrent: {
+    color: "rgba(255,255,255,0.7)",
+  },
+  stepDuration: {
+    color: colors.textMuted,
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  stepDurationCurrent: {
+    color: "rgba(255,255,255,0.82)",
+  },
+  progressTrack: {
+    backgroundColor: "rgba(255,255,255,0.14)",
+    borderRadius: radius.pill,
+    height: 6,
+    marginTop: spacing.xs,
+    overflow: "hidden",
+  },
+  progressFill: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.pill,
+    height: "100%",
+  },
+});
