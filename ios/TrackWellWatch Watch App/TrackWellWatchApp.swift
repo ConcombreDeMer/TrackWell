@@ -4,7 +4,7 @@ import SwiftUI
 struct TrackWellWatchApp: App {
   var body: some Scene {
     WindowGroup {
-      WorkoutView()
+      WatchRootView()
     }
   }
 }
