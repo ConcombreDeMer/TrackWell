@@ -2,11 +2,13 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 
 import { ProgramsStoreProvider } from "../features/programs";
+import { WatchSyncBridge } from "../features/watch-sync";
 import { colors } from "../theme";
 
 export default function RootLayout() {
   return (
     <ProgramsStoreProvider>
+      <WatchSyncBridge />
       <StatusBar style="dark" />
       <Stack
         screenOptions={{

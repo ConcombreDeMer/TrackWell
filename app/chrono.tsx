@@ -20,6 +20,11 @@ import { FinishedWorkoutView } from "../components/chrono/FinishedWorkoutView";
 import { StepTimelineSheet } from "../components/chrono/StepTimelineSheet";
 import { BackButton } from "../components/navigation/BackButton";
 import { formatDurationFromSeconds, useProgramsStore } from "../features/programs";
+import {
+  addWatchCommandListener,
+  publishWatchSession,
+  WatchWorkoutSnapshot,
+} from "../features/watch-sync";
 import { colors, radius, spacing } from "../theme";
 import { SquircleButton } from "../ui/Squircle";
 
@@ -29,7 +34,8 @@ export default function ChronoScreen() {
   const router = useRouter();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const { courseId, programId, weekIndex } = useLocalSearchParams<{
+  const { autoStart, courseId, programId, weekIndex } = useLocalSearchParams<{
+    autoStart?: string;
     courseId?: string;
     programId?: string;
     weekIndex?: string;
@@ -58,6 +64,7 @@ export default function ChronoScreen() {
   const allowNavigationRef = useRef(false);
   const hasCompletedRef = useRef(false);
   const hasAnimatedChronoEntranceRef = useRef(false);
+  const hasAppliedAutoStartRef = useRef<string | null>(null);
   const countdownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pauseBackdropAnim = useRef(new Animated.Value(0)).current;
   const stepLabelTranslate = useRef(new Animated.Value(0)).current;
@@ -185,6 +192,37 @@ export default function ChronoScreen() {
     finishedScreenOpacity.setValue(0);
     finishedScreenScale.setValue(0.9);
   }, [course]);
+
+  useEffect(() => {
+    if (!course || autoStart !== "true" || course.progress || hasStarted || isCountdownActive || hasFinished) {
+      return;
+    }
+
+    if (hasAppliedAutoStartRef.current === course.id) {
+      return;
+    }
+
+    hasAppliedAutoStartRef.current = course.id;
+    hasAnimatedChronoEntranceRef.current = false;
+    setIsLaunchAnimating(false);
+    setIsLaunchInterludeVisible(false);
+    launchScreenOpacity.setValue(0);
+    launchContentOpacity.setValue(1);
+    chronoInterfaceOpacity.setValue(0);
+    chronoInterfaceScale.setValue(0.94);
+    setCountdownValue(3);
+    setIsCountdownActive(true);
+  }, [
+    autoStart,
+    chronoInterfaceOpacity,
+    chronoInterfaceScale,
+    course,
+    hasFinished,
+    hasStarted,
+    isCountdownActive,
+    launchContentOpacity,
+    launchScreenOpacity,
+  ]);
 
   useEffect(() => {
     if (!course || !isRunning || hasFinished) {
@@ -512,25 +550,141 @@ export default function ChronoScreen() {
     [],
   );
 
-  if (!program || !week || !course || (!currentStep && !hasFinished)) {
-    return (
-      <SafeAreaView edges={["top", "bottom"]} style={styles.screen}>
-        <View style={styles.fallback}>
-          <BackButton />
-          <Text style={styles.fallbackTitle}>Chrono unavailable</Text>
-          <Text style={styles.fallbackText}>
-            The selected course could not be loaded. Return to Home and launch a valid workout.
-          </Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
+  const watchSnapshot = useMemo<WatchWorkoutSnapshot | null>(() => {
+    if (!program || !week || !course || !activeStep) {
+      return null;
+    }
 
-  const safeProgram = program;
-  const safeWeek = week;
-  const safeCourse = course;
+    return {
+      countdownValue: isCountdownActive ? countdownValue : 0,
+      context: "workout",
+      courseName: course.name,
+      state:
+        hasFinished
+          ? "finished"
+          : isCountdownActive
+            ? "countdown"
+            : !hasStarted
+              ? "idle"
+              : isRunning
+                ? "running"
+                : "paused",
+      updatedAt: new Date().toISOString(),
+      courseId: course.id,
+      currentStepIndex,
+      elapsedSeconds: completedCourseSeconds,
+      programId: program.id,
+      programName: program.name,
+      progressPercent: progressPercent,
+      remainingSeconds,
+      steps: course.steps,
+      stepDurationSeconds: activeStep.durationSeconds,
+      stepLabel: currentStepLabel,
+      stepType: activeStep.type,
+      totalDurationSeconds:
+        course.steps.reduce((total, step) => total + step.durationSeconds, 0),
+      totalSteps: course.steps.length,
+      weekIndex: week.index,
+    };
+  }, [
+    activeStep,
+    completedCourseSeconds,
+    countdownValue,
+    currentStepIndex,
+    currentStepLabel,
+    hasFinished,
+    hasStarted,
+    isCountdownActive,
+    isRunning,
+    remainingSeconds,
+    course,
+    program,
+    week,
+  ]);
 
-  function handlePrimarySurfacePress() {
+  useEffect(() => {
+    publishWatchSession(watchSnapshot);
+  }, [watchSnapshot]);
+
+  const resetWorkoutState = useCallback(
+    (clearSavedProgress = false) => {
+      if (!program || !week || !course) {
+        return;
+      }
+
+      setHasStarted(false);
+      setIsCountdownActive(false);
+      setCountdownValue(3);
+      setIsRunning(false);
+      setCurrentStepIndex(0);
+      setRemainingSeconds(course.steps[0]?.durationSeconds ?? 0);
+      setIsStepSheetOpen(false);
+      setHasFinished(false);
+      setIsFinishTransitioning(false);
+      setIsLaunchAnimating(false);
+      setIsLaunchInterludeVisible(false);
+      hasAnimatedChronoEntranceRef.current = false;
+      hasCompletedRef.current = false;
+      playPressScale.setValue(1);
+      playFadeOpacity.setValue(1);
+      launchScreenOpacity.setValue(1);
+      launchContentOpacity.setValue(0);
+      chronoInterfaceOpacity.setValue(1);
+      chronoInterfaceScale.setValue(1);
+      finishTransitionOpacity.setValue(1);
+      finishTransitionScale.setValue(1);
+      finishedScreenOpacity.setValue(0);
+      finishedScreenScale.setValue(0.9);
+
+      if (clearSavedProgress) {
+        saveCourseProgress(program.id, week.index, course.id, undefined);
+        setCourseCompleted(program.id, week.index, course.id, false);
+      }
+    },
+    [
+      chronoInterfaceOpacity,
+      chronoInterfaceScale,
+      finishTransitionOpacity,
+      finishTransitionScale,
+      finishedScreenOpacity,
+      finishedScreenScale,
+      launchContentOpacity,
+      launchScreenOpacity,
+      playFadeOpacity,
+      playPressScale,
+      course,
+      program,
+      week,
+      saveCourseProgress,
+      setCourseCompleted,
+    ],
+  );
+
+  const beginCountdownDirectly = useCallback(() => {
+    if (hasFinished || isStepSheetOpen || isLaunchAnimating) {
+      return;
+    }
+
+    hasAnimatedChronoEntranceRef.current = false;
+    setIsLaunchAnimating(false);
+    setIsLaunchInterludeVisible(false);
+    launchScreenOpacity.setValue(0);
+    launchContentOpacity.setValue(1);
+    chronoInterfaceOpacity.setValue(0);
+    chronoInterfaceScale.setValue(0.94);
+    setCountdownValue(3);
+    setIsCountdownActive(true);
+  }, [
+    chronoInterfaceOpacity,
+    chronoInterfaceScale,
+    hasFinished,
+    isLaunchAnimating,
+    isStepSheetOpen,
+    launchContentOpacity,
+    launchScreenOpacity,
+  ]);
+
+  const handlePrimarySurfacePress = useCallback(() => {
     if (hasFinished || isStepSheetOpen || isLaunchAnimating) {
       return;
     }
@@ -554,7 +708,7 @@ export default function ChronoScreen() {
       }
       return nextValue;
     });
-  }
+  }, [hasFinished, hasStarted, isCountdownActive, isLaunchAnimating, isStepSheetOpen]);
 
   function handleIdlePlayPressIn() {
     if (!isIdleLaunchState || isLaunchAnimating) {
@@ -662,14 +816,67 @@ export default function ChronoScreen() {
     );
   }
 
-  function handleSkipStep() {
+  const handleSkipStep = useCallback(() => {
     if (hasFinished) {
       return;
     }
 
-    // TODO: brancher logique existante si un handler de skip dédié existe ailleurs dans le projet.
     advanceToNextStep("skip");
+  }, [advanceToNextStep, hasFinished]);
+
+  useEffect(() => {
+    return addWatchCommandListener((command) => {
+      if (command.courseId && command.courseId !== course?.id) {
+        return;
+      }
+
+      switch (command.action) {
+        case "startWorkout":
+          if (!hasStarted && !isCountdownActive) {
+            beginCountdownDirectly();
+          }
+          break;
+        case "togglePlayback":
+          handlePrimarySurfacePress();
+          break;
+        case "skipStep":
+          if (hasStarted && !isCountdownActive && !hasFinished) {
+            handleSkipStep();
+          }
+          break;
+        case "resetWorkout":
+          resetWorkoutState(true);
+          break;
+      }
+    });
+  }, [
+    beginCountdownDirectly,
+    handlePrimarySurfacePress,
+    handleSkipStep,
+    hasFinished,
+    hasStarted,
+    isCountdownActive,
+    resetWorkoutState,
+    course?.id,
+  ]);
+
+  if (!program || !week || !course || (!currentStep && !hasFinished)) {
+    return (
+      <SafeAreaView edges={["top", "bottom"]} style={styles.screen}>
+        <View style={styles.fallback}>
+          <BackButton />
+          <Text style={styles.fallbackTitle}>Chrono unavailable</Text>
+          <Text style={styles.fallbackText}>
+            The selected course could not be loaded. Return to Home and launch a valid workout.
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
   }
+
+  const safeProgram = program;
+  const safeWeek = week;
+  const safeCourse = course;
 
   function handleFinishedNext() {
     // TODO: brancher logique existante si la route ressenti diffère de /end-course.
