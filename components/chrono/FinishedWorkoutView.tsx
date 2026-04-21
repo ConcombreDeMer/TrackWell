@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, View } from "react-native";
 
-import { colors, spacing } from "../../theme";
+import { spacing, useThemePalette } from "../../theme";
 import { PrimaryButton } from "../../ui/PrimaryButton";
 
 type FinishedWorkoutViewProps = {
@@ -9,17 +9,19 @@ type FinishedWorkoutViewProps = {
 };
 
 export function FinishedWorkoutView({ onNext }: FinishedWorkoutViewProps) {
+  const palette = useThemePalette();
+
   return (
     <View style={styles.container}>
       <View style={styles.iconWrap}>
-        <Ionicons color={colors.text} name="sparkles-outline" size={78} />
-        <Ionicons color={colors.text} name="sparkles" size={34} style={styles.iconAccentOne} />
-        <Ionicons color={colors.text} name="sparkles" size={24} style={styles.iconAccentTwo} />
+        <Ionicons color={palette.text} name="sparkles-outline" size={78} />
+        <Ionicons color={palette.text} name="sparkles" size={34} style={styles.iconAccentOne} />
+        <Ionicons color={palette.text} name="sparkles" size={24} style={styles.iconAccentTwo} />
       </View>
 
       <View style={styles.copyBlock}>
-        <Text style={styles.eyebrow}>Course terminee</Text>
-        <Text style={styles.title}>Felicitations</Text>
+        <Text style={[styles.eyebrow, { color: palette.textMuted }]}>Course terminee</Text>
+        <Text style={[styles.title, { color: palette.text }]}>Felicitations</Text>
       </View>
 
       <View style={styles.buttonWrap}>
@@ -59,18 +61,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: spacing.xs,
   },
-  eyebrow: {
-    color: "#555555",
-    fontSize: 22,
-    fontWeight: "500",
-  },
-  title: {
-    color: colors.text,
-    fontSize: 42,
-    fontWeight: "800",
-    letterSpacing: -1.6,
-    textAlign: "center",
-  },
+  eyebrow: { fontSize: 22, fontWeight: "500" },
+  title: { fontSize: 42, fontWeight: "800", letterSpacing: -1.6, textAlign: "center" },
   buttonWrap: {
     marginTop: 84,
     width: "100%",

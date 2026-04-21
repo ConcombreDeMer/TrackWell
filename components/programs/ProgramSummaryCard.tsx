@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Animated, GestureResponderEvent, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Program, getProgramCompletion, getProgramCourseCount } from "../../features/programs";
-import { colors, radius, spacing } from "../../theme";
+import { radius, spacing, useThemePalette } from "../../theme";
 import { SquircleButton } from "../../ui/Squircle";
 
 type ProgramSummaryCardProps = {
@@ -19,6 +19,7 @@ export function ProgramSummaryCard({
   program,
   onPress,
 }: ProgramSummaryCardProps) {
+  const palette = useThemePalette();
   const courseCount = getProgramCourseCount(program);
   const completion = getProgramCompletion(program);
   const [showBookmark, setShowBookmark] = useState(isSelected);
@@ -70,9 +71,18 @@ export function ProgramSummaryCard({
   }
 
   return (
-    <SquircleButton onPress={onPress} style={styles.card}>
+    <SquircleButton
+      onPress={onPress}
+      style={[
+        styles.card,
+        {
+          backgroundColor: palette.surface,
+          borderColor: palette.border,
+        },
+      ]}
+    >
       <View style={styles.header}>
-        <Text style={styles.title}>{program.name}</Text>
+        <Text style={[styles.title, { color: palette.text }]}>{program.name}</Text>
         {showBookmark ? (
           <Animated.View
             style={[
@@ -84,27 +94,27 @@ export function ProgramSummaryCard({
             ]}
           >
             <Pressable hitSlop={8} onPress={handleBookmarkPress}>
-              <Ionicons color={colors.text} name="bookmark" size={22} style={styles.selectedIcon} />
+              <Ionicons color={palette.text} name="bookmark" size={22} style={styles.selectedIcon} />
             </Pressable>
           </Animated.View>
         ) : null}
       </View>
-      <Text numberOfLines={2} style={styles.description}>
+      <Text numberOfLines={2} style={[styles.description, { color: palette.textMuted }]}>
         {program.description || "No description yet."}
       </Text>
 
       <View style={styles.stats}>
         <View style={styles.stat}>
-          <Text style={styles.statValue}>{program.numberOfWeeks}</Text>
-          <Text style={styles.statLabel}>Weeks</Text>
+          <Text style={[styles.statValue, { color: palette.text }]}>{program.numberOfWeeks}</Text>
+          <Text style={[styles.statLabel, { color: palette.textMuted }]}>Weeks</Text>
         </View>
         <View style={styles.stat}>
-          <Text style={styles.statValue}>{courseCount}</Text>
-          <Text style={styles.statLabel}>Courses</Text>
+          <Text style={[styles.statValue, { color: palette.text }]}>{courseCount}</Text>
+          <Text style={[styles.statLabel, { color: palette.textMuted }]}>Courses</Text>
         </View>
         <View style={styles.stat}>
-          <Text style={styles.statValue}>{completion}%</Text>
-          <Text style={styles.statLabel}>Completion</Text>
+          <Text style={[styles.statValue, { color: palette.text }]}>{completion}%</Text>
+          <Text style={[styles.statLabel, { color: palette.textMuted }]}>Completion</Text>
         </View>
       </View>
     </SquircleButton>
@@ -113,8 +123,6 @@ export function ProgramSummaryCard({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
     borderRadius: radius.lg,
     borderWidth: 1,
     gap: spacing.md,
@@ -126,23 +134,14 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     justifyContent: "space-between",
   },
-  title: {
-    color: colors.text,
-    flex: 1,
-    fontSize: 24,
-    fontWeight: "700",
-  },
+  title: { flex: 1, fontSize: 24, fontWeight: "700" },
   selectedIconButton: {
     flexShrink: 0,
   },
   selectedIcon: {
     marginTop: 2,
   },
-  description: {
-    color: colors.textMuted,
-    fontSize: 16,
-    lineHeight: 22,
-  },
+  description: { fontSize: 16, lineHeight: 22 },
   stats: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -151,14 +150,6 @@ const styles = StyleSheet.create({
   stat: {
     gap: 2,
   },
-  statValue: {
-    color: colors.text,
-    fontSize: 30,
-    fontWeight: "700",
-  },
-  statLabel: {
-    color: colors.textMuted,
-    fontSize: 15,
-    fontWeight: "600",
-  },
+  statValue: { fontSize: 30, fontWeight: "700" },
+  statLabel: { fontSize: 15, fontWeight: "600" },
 });

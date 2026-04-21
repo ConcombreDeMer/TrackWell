@@ -2,11 +2,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { StyleSheet } from "react-native";
 
-import { colors, radius, spacing } from "../../theme";
+import { radius, spacing, useThemePalette } from "../../theme";
 import { SquircleButton } from "../../ui/Squircle";
 
 export function BackButton() {
   const router = useRouter();
+  const palette = useThemePalette();
 
   return (
     <SquircleButton
@@ -18,9 +19,15 @@ export function BackButton() {
 
         router.replace("/");
       }}
-      style={styles.button}
+      style={[
+        styles.button,
+        {
+          backgroundColor: palette.surface,
+          borderColor: palette.border,
+        },
+      ]}
     >
-      <Ionicons color={colors.text} name="chevron-back" size={22} />
+      <Ionicons color={palette.text} name="chevron-back" size={22} />
     </SquircleButton>
   );
 }
@@ -29,10 +36,8 @@ const styles = StyleSheet.create({
   button: {
     alignItems: "center",
     alignSelf: "flex-start",
-    backgroundColor: colors.surface,
     borderRadius: radius.pill,
     borderWidth: 1,
-    borderColor: colors.border,
     height: 44,
     justifyContent: "center",
     marginBottom: spacing.sm,

@@ -22,7 +22,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { DayOfWeek, StepType, getDayName, useProgramsStore } from "../features/programs";
-import { colors, radius, spacing } from "../theme";
+import { colors, radius, spacing, useThemePalette } from "../theme";
 import { ActionCardButton } from "../ui/ActionCardButton";
 import { SquircleButton, SquircleView } from "../ui/Squircle";
 
@@ -74,6 +74,7 @@ if (UIManager.setLayoutAnimationEnabledExperimental) {
 
 export default function CourseCreateScreen() {
   const router = useRouter();
+  const palette = useThemePalette();
   const { courseId, draft, dayOfWeek, programId, weekIndex } = useLocalSearchParams<{
     courseId?: string;
     draft?: string;
@@ -576,6 +577,16 @@ export default function CourseCreateScreen() {
     inputRange: [0, 1],
     outputRange: [1, 1.14],
   });
+  const footerGradientColors = [
+    hexToRgba(palette.background, 0),
+    hexToRgba(palette.background, 0.76),
+    palette.background,
+  ] as const;
+  const selectorPlusColor = mixHexColors(
+    palette.surfaceMuted,
+    "#000000",
+    palette.statusBarStyle === "light" ? 0.14 : 0.2,
+  );
 
   return (
     <SafeAreaView edges={["top", "bottom"]} style={styles.screen}>
@@ -592,8 +603,14 @@ export default function CourseCreateScreen() {
           <View style={styles.builderArea}>
             {items.length === 0 ? (
               <Pressable onPress={closeExpandedEditors} style={styles.emptyState}>
-                <Text style={styles.emptyText}>Add a step to your course</Text>
-                <Text style={styles.emptyHint}>Press and hold the + button to choose a step or a loop.</Text>
+                <View style={styles.emptyCopy}>
+                  <Text style={[styles.emptyText, { color: palette.text }]}>
+                    Add a step to your course
+                  </Text>
+                  <Text style={[styles.emptyHint, { color: palette.textMuted }]}>
+                    Press and hold the + button to choose a step or a loop.
+                  </Text>
+                </View>
               </Pressable>
             ) : (
               <ScrollView
@@ -667,7 +684,7 @@ export default function CourseCreateScreen() {
         </View>
 
         <LinearGradient
-          colors={["rgba(249,249,249,0)", "rgba(249,249,249,0.72)", colors.background]}
+          colors={footerGradientColors}
           pointerEvents="none"
           locations={[0, 0.58, 1]}
           style={styles.footerGradient}
@@ -677,9 +694,18 @@ export default function CourseCreateScreen() {
             <View pointerEvents="box-none" style={styles.selectorMenuShell}>
               <AnimatedSquircleView
                 pointerEvents="none"
-                style={[styles.selectorMenuBackground, { opacity: backgroundOpacity }]}
+                style={[
+                  styles.selectorMenuBackground,
+                  {
+                    backgroundColor: palette.surfaceMuted,
+                    opacity: backgroundOpacity,
+                  },
+                ]}
               />
-              <SquircleView pointerEvents="box-none" style={styles.selectorMenu}>
+              <AnimatedSquircleView
+                pointerEvents="box-none"
+                style={styles.selectorMenu}
+              >
                 <Animated.View style={{ opacity: sideOpacity, transform: leftChoiceTransform }}>
                   <ChoiceButton
                     active={highlightedChoice === "loop"}
@@ -698,8 +724,16 @@ export default function CourseCreateScreen() {
                   style={styles.selectorPlusWrap}
                 >
                   <Animated.View pointerEvents="none" style={{ transform: [{ scale: plusScale }] }}>
-                    <SquircleButton style={styles.selectorPlus}>
-                      <Text pointerEvents="none" style={styles.plusLabel}>
+                    <SquircleButton
+                      style={[
+                        styles.selectorPlus,
+                        {
+                          backgroundColor: selectorPlusColor,
+                          borderColor: palette.border,
+                        },
+                      ]}
+                    >
+                      <Text pointerEvents="none" style={[styles.plusLabel, { color: palette.text }]}>
                         +
                       </Text>
                     </SquircleButton>
@@ -716,7 +750,7 @@ export default function CourseCreateScreen() {
                     onLayout={() => handleAbsoluteLayout(stepChoiceRef, setStepBounds)}
                   />
                 </Animated.View>
-              </SquircleView>
+              </AnimatedSquircleView>
             </View>
           </View>
 
@@ -753,8 +787,19 @@ function BuilderStepCard({
   onTypeChange: (type: StepType) => void;
   step: DraftStep;
 }) {
+  const palette = useThemePalette();
+
   return (
-    <SquircleButton onPress={onPress} style={styles.stepCard}>
+    <SquircleButton
+      onPress={onPress}
+      style={[
+        styles.stepCard,
+        {
+          backgroundColor: palette.surface,
+          borderColor: palette.border,
+        },
+      ]}
+    >
       <View style={styles.stepCardContent}>
         <CompactStepRow step={step} />
         {expanded ? (
@@ -801,6 +846,12 @@ function BuilderLoopCard({
   onSwipeStateChange: (isSwiping: boolean) => void;
   onLoopStepTypeChange: (itemId: string, stepIndex: number, type: StepType) => void;
 }) {
+  const palette = useThemePalette();
+  const loopShellColor = mixHexColors(
+    palette.surfaceMuted,
+    "#FFFFFF",
+    palette.statusBarStyle === "light" ? 0.08 : 0.1,
+  );
   const repeatTranslate = useRef(new Animated.Value(0)).current;
   const repeatOpacity = useRef(new Animated.Value(1)).current;
   const previousRepeatRef = useRef(item.repeatCount);
@@ -831,7 +882,15 @@ function BuilderLoopCard({
   }, [item.repeatCount, repeatOpacity, repeatTranslate]);
 
   return (
-    <SquircleView style={styles.loopCard}>
+    <SquircleView
+      style={[
+        styles.loopCard,
+        {
+          backgroundColor: loopShellColor,
+          borderColor: palette.border,
+        },
+      ]}
+    >
       <Pressable
         onPress={onLoopBackgroundPress}
         pointerEvents={isRepeatExpanded || hasExpandedLoopStep ? "auto" : "none"}
@@ -846,7 +905,13 @@ function BuilderLoopCard({
             >
               <SquircleButton
                 onPress={() => onLoopStepPress(step.id)}
-                style={styles.loopStepCard}
+                style={[
+                  styles.loopStepCard,
+                  {
+                    backgroundColor: palette.surface,
+                    borderColor: palette.border,
+                  },
+                ]}
               >
                 <View style={styles.stepCardContent}>
                   <CompactStepRow step={step} />
@@ -867,14 +932,33 @@ function BuilderLoopCard({
       </View>
 
       <View style={styles.loopFooter}>
-        <SquircleButton onPress={onLoopRepeatPress} style={[styles.loopRepeatControl, isRepeatExpanded && styles.loopRepeatControlExpanded]}>
+        <SquircleButton
+          onPress={onLoopRepeatPress}
+          style={[
+            styles.loopRepeatControl,
+            isRepeatExpanded && styles.loopRepeatControlExpanded,
+            {
+              backgroundColor: palette.background,
+              borderColor: palette.border,
+            },
+          ]}
+        >
           <View style={styles.loopRepeatTopRow}>
-          <Text style={styles.loopRepeatLabel}>Time</Text>
-          <SquircleView style={styles.loopRepeatValueWrap}>
+          <Text style={[styles.loopRepeatLabel, { color: palette.textMuted }]}>Time</Text>
+          <SquircleView
+            style={[
+              styles.loopRepeatValueWrap,
+              {
+                backgroundColor: palette.surface,
+                borderColor: palette.border,
+              },
+            ]}
+          >
             <Animated.Text
               style={[
                 styles.loopRepeatValue,
                 {
+                  color: palette.text,
                   opacity: repeatOpacity,
                   transform: [{ translateY: repeatTranslate }],
                 },
@@ -891,8 +975,16 @@ function BuilderLoopCard({
             </View>
           ) : null}
         </SquircleButton>
-        <SquircleButton onPress={onIncrement} style={styles.innerAddButton}>
-          <Text style={styles.innerAddLabel}>+</Text>
+        <SquircleButton
+          onPress={onIncrement}
+          style={[
+            styles.innerAddButton,
+            {
+              backgroundColor: palette.primaryGradientStart,
+            },
+          ]}
+        >
+          <Text style={[styles.innerAddLabel, { color: palette.primaryForeground }]}>+</Text>
         </SquircleButton>
       </View>
     </SquircleView>
@@ -900,6 +992,7 @@ function BuilderLoopCard({
 }
 
 function CompactStepRow({ step }: { step: DraftStep }) {
+  const palette = useThemePalette();
   const compactIconTranslate = useRef(new Animated.Value(0)).current;
   const compactIconOpacity = useRef(new Animated.Value(1)).current;
   const compactTypeTranslate = useRef(new Animated.Value(0)).current;
@@ -960,7 +1053,7 @@ function CompactStepRow({ step }: { step: DraftStep }) {
           }}
         >
           <Ionicons
-            color={colors.text}
+            color={palette.text}
             name={step.type === "walk" ? "walk-outline" : "flash-outline"}
             size={34}
           />
@@ -971,6 +1064,7 @@ function CompactStepRow({ step }: { step: DraftStep }) {
           numberOfLines={1}
           style={[
             styles.stepTypeLabel,
+            { color: palette.text },
             {
               opacity: compactTypeOpacity,
               transform: [{ translateY: compactTypeTranslate }],
@@ -980,7 +1074,7 @@ function CompactStepRow({ step }: { step: DraftStep }) {
           {step.type === "walk" ? "Walk" : "Run"}
         </Animated.Text>
       </View>
-      <Text numberOfLines={1} style={styles.stepDuration}>
+      <Text numberOfLines={1} style={[styles.stepDuration, { color: palette.text }]}>
         {formatBuilderDuration(step.durationSeconds)}
       </Text>
     </View>
@@ -1002,6 +1096,8 @@ function StepEditor({
   onSelectType: (type: StepType) => void;
   type: StepType;
 }) {
+  const palette = useThemePalette();
+
   return (
     <View style={styles.stepEditor}>
       <View style={styles.typeToggleRow}>
@@ -1018,13 +1114,24 @@ function StepEditor({
       </View>
       <View style={styles.durationEditorRow}>
         <RepeatingIconButton label="−" onStep={onDecrease} />
-        <Text style={styles.durationEditorValue}>{formatBuilderDuration(durationSeconds)}</Text>
+        <Text style={[styles.durationEditorValue, { color: palette.text }]}>
+          {formatBuilderDuration(durationSeconds)}
+        </Text>
         <RepeatingIconButton label="+" onStep={onIncrease} />
       </View>
       {onDuplicate ? (
-        <SquircleButton onPress={onDuplicate} style={styles.duplicateButton}>
-          <Ionicons color={colors.text} name="copy-outline" size={18} />
-          <Text style={styles.duplicateButtonLabel}>Duplicate</Text>
+        <SquircleButton
+          onPress={onDuplicate}
+          style={[
+            styles.duplicateButton,
+            {
+              backgroundColor: palette.surfaceMuted,
+              borderColor: palette.border,
+            },
+          ]}
+        >
+          <Ionicons color={palette.text} name="copy-outline" size={18} />
+          <Text style={[styles.duplicateButtonLabel, { color: palette.text }]}>Duplicate</Text>
         </SquircleButton>
       ) : null}
     </View>
@@ -1040,14 +1147,34 @@ function MiniOptionButton({
   label: string;
   onPress: () => void;
 }) {
+  const palette = useThemePalette();
+
   function handlePress() {
     triggerTypeSelectionHaptic();
     onPress();
   }
 
   return (
-    <SquircleButton onPress={handlePress} style={[styles.miniOptionButton, active && styles.miniOptionButtonActive]}>
-      <Text style={[styles.miniOptionLabel, active && styles.miniOptionLabelActive]}>{label}</Text>
+    <SquircleButton
+      onPress={handlePress}
+      style={[
+        styles.miniOptionButton,
+        active && styles.miniOptionButtonActive,
+        {
+          backgroundColor: active ? palette.primaryGradientStart : palette.surfaceMuted,
+          borderColor: active ? palette.primaryGradientStart : palette.border,
+        },
+      ]}
+    >
+      <Text
+        style={[
+          styles.miniOptionLabel,
+          active && styles.miniOptionLabelActive,
+          { color: active ? palette.primaryForeground : palette.text },
+        ]}
+      >
+        {label}
+      </Text>
     </SquircleButton>
   );
 }
@@ -1059,9 +1186,20 @@ function MiniIconButton({
   label: string;
   onPress: () => void;
 }) {
+  const palette = useThemePalette();
+
   return (
-    <SquircleButton onPress={onPress} style={styles.miniIconButton}>
-      <Text style={styles.miniIconLabel}>{label}</Text>
+    <SquircleButton
+      onPress={onPress}
+      style={[
+        styles.miniIconButton,
+        {
+          backgroundColor: palette.surfaceMuted,
+          borderColor: palette.border,
+        },
+      ]}
+    >
+      <Text style={[styles.miniIconLabel, { color: palette.text }]}>{label}</Text>
     </SquircleButton>
   );
 }
@@ -1073,6 +1211,7 @@ function RepeatingIconButton({
   label: string;
   onStep: () => void;
 }) {
+  const palette = useThemePalette();
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const longPressActiveRef = useRef(false);
@@ -1120,9 +1259,15 @@ function RepeatingIconButton({
       onPress={handlePress}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
-      style={styles.miniIconButton}
+      style={[
+        styles.miniIconButton,
+        {
+          backgroundColor: palette.surfaceMuted,
+          borderColor: palette.border,
+        },
+      ]}
     >
-      <Text style={styles.miniIconLabel}>{label}</Text>
+      <Text style={[styles.miniIconLabel, { color: palette.text }]}>{label}</Text>
     </SquircleButton>
   );
 }
@@ -1189,6 +1334,7 @@ function SwipeToDeleteRow({
   onDelete: () => void;
   onSwipeStateChange: (isSwiping: boolean) => void;
 }) {
+  const palette = useThemePalette();
   const translateX = useRef(new Animated.Value(0)).current;
   const deleteFade = useRef(new Animated.Value(1)).current;
   const enterOpacity = useRef(new Animated.Value(animateIn ? 0 : 1)).current;
@@ -1369,8 +1515,11 @@ function SwipeToDeleteRow({
           },
         ]}
       >
-        <SquircleButton onPress={triggerDelete} style={styles.deleteAction}>
-          <Ionicons color={colors.surface} name="trash" size={28} />
+        <SquircleButton
+          onPress={triggerDelete}
+          style={[styles.deleteAction, { backgroundColor: "#D96B6B" }]}
+        >
+          <Ionicons color={palette.primaryForeground} name="trash" size={28} />
         </SquircleButton>
       </Animated.View>
       <Animated.View
@@ -1408,6 +1557,12 @@ function ChoiceButton({
   label: string;
   onLayout: (event: LayoutChangeEvent) => void;
 }) {
+  const palette = useThemePalette();
+  const activeChoiceColor = mixHexColors(
+    palette.surfaceMuted,
+    "#000000",
+    palette.statusBarStyle === "light" ? 0.08 : 0.12,
+  );
   const activeProgress = useRef(new Animated.Value(active ? 1 : 0)).current;
 
   useEffect(() => {
@@ -1422,11 +1577,22 @@ function ChoiceButton({
 
   return (
     <View ref={innerRef} onLayout={onLayout}>
-      <SquircleView style={[styles.choiceButton, active && styles.choiceButtonActive]}>
+      <SquircleView
+        style={[
+          styles.choiceButton,
+          active && styles.choiceButtonActive,
+          {
+            backgroundColor: active ? activeChoiceColor : "transparent",
+          },
+        ]}
+      >
         <AnimatedSquircleView
           pointerEvents="none"
           style={[
             styles.choiceButtonHighlight,
+            {
+              backgroundColor: activeChoiceColor,
+            },
             {
               opacity: activeProgress,
               transform: [
@@ -1452,9 +1618,9 @@ function ChoiceButton({
             ],
           }}
         >
-          <Ionicons color={colors.text} name={icon} size={32} />
+          <Ionicons color={palette.text} name={icon} size={32} />
         </Animated.View>
-        <Text style={styles.choiceLabel}>{label}</Text>
+        <Text style={[styles.choiceLabel, { color: palette.text }]}>{label}</Text>
       </SquircleView>
     </View>
   );
@@ -1834,6 +2000,56 @@ function clearRepeatTimers(
   }
 }
 
+function hexToRgba(hex: string, alpha: number) {
+  const sanitized = hex.replace("#", "");
+
+  if (sanitized.length !== 6) {
+    return hex;
+  }
+
+  const red = Number.parseInt(sanitized.slice(0, 2), 16);
+  const green = Number.parseInt(sanitized.slice(2, 4), 16);
+  const blue = Number.parseInt(sanitized.slice(4, 6), 16);
+
+  return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+}
+
+function mixHexColors(baseHex: string, mixHex: string, amount: number) {
+  const base = parseHexColor(baseHex);
+  const mix = parseHexColor(mixHex);
+
+  if (!base || !mix) {
+    return baseHex;
+  }
+
+  const clampedAmount = Math.min(Math.max(amount, 0), 1);
+  const red = Math.round(base.red + (mix.red - base.red) * clampedAmount);
+  const green = Math.round(base.green + (mix.green - base.green) * clampedAmount);
+  const blue = Math.round(base.blue + (mix.blue - base.blue) * clampedAmount);
+
+  return rgbToHex(red, green, blue);
+}
+
+function parseHexColor(hex: string) {
+  const sanitized = hex.replace("#", "");
+
+  if (sanitized.length !== 6) {
+    return null;
+  }
+
+  return {
+    blue: Number.parseInt(sanitized.slice(4, 6), 16),
+    green: Number.parseInt(sanitized.slice(2, 4), 16),
+    red: Number.parseInt(sanitized.slice(0, 2), 16),
+  };
+}
+
+function rgbToHex(red: number, green: number, blue: number) {
+  return `#${[red, green, blue]
+    .map((value) => value.toString(16).padStart(2, "0"))
+    .join("")}`;
+}
+
 const styles = StyleSheet.create({
   screen: {
     backgroundColor: colors.background,
@@ -1884,19 +2100,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flex: 1,
     justifyContent: "center",
-    paddingHorizontal: spacing.lg,
+    paddingBottom: 140,
+    paddingHorizontal: spacing.xl,
+  },
+  emptyCopy: {
+    alignItems: "center",
+    gap: spacing.sm,
+    maxWidth: 360,
   },
   emptyText: {
-    color: colors.textMuted,
     fontSize: 20,
+    fontWeight: "600",
     lineHeight: 28,
     textAlign: "center",
   },
   emptyHint: {
-    color: "#A0A0A0",
     fontSize: 14,
     lineHeight: 20,
-    marginTop: spacing.sm,
     textAlign: "center",
   },
   itemsContent: {
@@ -1926,7 +2146,6 @@ const styles = StyleSheet.create({
   },
   deleteAction: {
     alignItems: "center",
-    backgroundColor: "#F48484",
     borderRadius: 28,
     height: "100%",
     justifyContent: "center",
@@ -1934,8 +2153,6 @@ const styles = StyleSheet.create({
   },
   stepCard: {
     alignItems: "stretch",
-    backgroundColor: colors.surface,
-    borderColor: "#ECECEC",
     borderRadius: CARD_RADIUS,
     borderWidth: 1,
     minHeight: 82,
@@ -1964,12 +2181,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   stepTypeLabel: {
-    color: colors.text,
     fontSize: 16,
     fontWeight: "600",
   },
   stepDuration: {
-    color: colors.text,
     fontSize: 18,
     fontWeight: "500",
   },
@@ -1983,7 +2198,7 @@ const styles = StyleSheet.create({
   },
   miniOptionButton: {
     alignItems: "center",
-    backgroundColor: colors.surfaceMuted,
+    borderWidth: 1,
     borderRadius: radius.md,
     flex: 1,
     justifyContent: "center",
@@ -1992,10 +2207,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   miniOptionButtonActive: {
-    backgroundColor: "#DCDCDC",
   },
   miniOptionLabel: {
-    color: colors.text,
     fontSize: 15,
     fontWeight: "600",
   },
@@ -2009,19 +2222,17 @@ const styles = StyleSheet.create({
   },
   miniIconButton: {
     alignItems: "center",
-    backgroundColor: colors.surfaceMuted,
+    borderWidth: 1,
     borderRadius: radius.md,
     height: 42,
     justifyContent: "center",
     width: 52,
   },
   miniIconLabel: {
-    color: colors.text,
     fontSize: 26,
     lineHeight: 26,
   },
   durationEditorValue: {
-    color: colors.text,
     flex: 1,
     fontSize: 16,
     fontWeight: "600",
@@ -2029,7 +2240,7 @@ const styles = StyleSheet.create({
   },
   duplicateButton: {
     alignItems: "center",
-    backgroundColor: colors.surfaceMuted,
+    borderWidth: 1,
     borderRadius: radius.md,
     flexDirection: "row",
     gap: spacing.xs,
@@ -2038,12 +2249,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   duplicateButtonLabel: {
-    color: colors.text,
     fontSize: 15,
     fontWeight: "600",
   },
   loopCard: {
-    backgroundColor: "#E5E5E5",
+    borderWidth: 1,
     borderRadius: CARD_RADIUS,
     paddingHorizontal: spacing.sm,
     paddingBottom: spacing.sm,
@@ -2059,7 +2269,7 @@ const styles = StyleSheet.create({
   },
   loopStepCard: {
     alignItems: "stretch",
-    backgroundColor: colors.surface,
+    borderWidth: 1,
     borderRadius: CARD_RADIUS,
     minHeight: 82,
     paddingHorizontal: spacing.md,
@@ -2073,7 +2283,7 @@ const styles = StyleSheet.create({
   },
   loopRepeatControl: {
     alignItems: "center",
-    backgroundColor: "#CFCFCF",
+    borderWidth: 1,
     borderRadius: 20,
     gap: spacing.sm,
     minHeight: 50,
@@ -2096,13 +2306,12 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   loopRepeatLabel: {
-    color: "#4A4A4A",
     fontSize: 15,
     fontWeight: "500",
   },
   loopRepeatValueWrap: {
     alignItems: "center",
-    backgroundColor: colors.surface,
+    borderWidth: 1,
     borderRadius: 18,
     height: 40,
     justifyContent: "center",
@@ -2110,20 +2319,17 @@ const styles = StyleSheet.create({
     // paddingHorizontal: spacing.sm,
   },
   loopRepeatValue: {
-    color: colors.text,
     fontSize: 16,
     fontWeight: "700",
   },
   innerAddButton: {
     alignItems: "center",
-    backgroundColor: "#C9C9C9",
     borderRadius: 16,
     height: 50,
     justifyContent: "center",
     width: 50,
   },
   innerAddLabel: {
-    color: colors.surface,
     fontSize: 28,
     lineHeight: 28,
   },
@@ -2145,7 +2351,7 @@ const styles = StyleSheet.create({
   },
   selectorZone: {
     alignItems: "center",
-    minHeight: 154,
+    minHeight: 112,
     justifyContent: "flex-end",
   },
   selectorMenuShell: {
@@ -2154,8 +2360,7 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   selectorMenuBackground: {
-    backgroundColor: "#F0F0F0",
-    borderRadius: 28,
+    borderRadius: 32,
     bottom: 0,
     left: 0,
     position: "absolute",
@@ -2165,12 +2370,12 @@ const styles = StyleSheet.create({
   selectorMenu: {
     alignItems: "center",
     alignSelf: "stretch",
-    borderRadius: 28,
+    borderRadius: 32,
     flexDirection: "row",
     justifyContent: "space-between",
-    minHeight: 108,
+    minHeight: 92,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.sm,
     width: "100%",
   },
   choiceButton: {
@@ -2187,7 +2392,6 @@ const styles = StyleSheet.create({
   choiceButtonActive: {
   },
   choiceButtonHighlight: {
-    backgroundColor: "#E3E3E3",
     borderRadius: radius.lg,
     bottom: 0,
     left: 0,
@@ -2196,7 +2400,6 @@ const styles = StyleSheet.create({
     top: 0,
   },
   choiceLabel: {
-    color: colors.text,
     fontSize: 14,
     fontWeight: "600",
   },
@@ -2209,7 +2412,7 @@ const styles = StyleSheet.create({
   selectorPlusWrap: {
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 84,
+    minHeight: 72,
     minWidth: 104,
   },
   chevronTrail: {
@@ -2220,13 +2423,13 @@ const styles = StyleSheet.create({
     minWidth: 36,
   },
   selectorChevron: {
-    color: "#D2D2D2",
+    color: colors.textMuted,
     fontSize: 34,
     lineHeight: 34,
   },
   selectorPlus: {
     alignItems: "center",
-    backgroundColor: "#A7A7A7",
+    borderWidth: 1,
     borderRadius: 22,
     height: 52,
     justifyContent: "center",
@@ -2238,20 +2441,18 @@ const styles = StyleSheet.create({
   },
   addButton: {
     alignItems: "center",
-    backgroundColor: "#A7A7A7",
     borderRadius: 18,
     height: 52,
     justifyContent: "center",
     width: 68,
   },
   addButtonLabel: {
-    color: colors.surface,
+    color: colors.primaryForeground,
     fontSize: 34,
     fontWeight: "300",
     lineHeight: 34,
   },
   plusLabel: {
-    color: colors.surface,
     fontSize: 30,
     fontWeight: "300",
     lineHeight: 30,

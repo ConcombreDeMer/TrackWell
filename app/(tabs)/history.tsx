@@ -7,11 +7,12 @@ import {
   getCourseDurationSeconds,
   useProgramsStore,
 } from "../../features/programs";
-import { colors, radius, spacing } from "../../theme";
+import { colors, radius, spacing, useThemePalette } from "../../theme";
 import { SquircleButton, SquircleView } from "../../ui/Squircle";
 
 export default function HistoryScreen() {
   const router = useRouter();
+  const palette = useThemePalette();
   const { programs } = useProgramsStore();
 
   const historyCourses = programs.flatMap((program) =>
@@ -30,7 +31,15 @@ export default function HistoryScreen() {
       <Text style={styles.title}>History</Text>
 
       {historyCourses.length === 0 ? (
-        <SquircleView style={styles.emptyState}>
+        <SquircleView
+          style={[
+            styles.emptyState,
+            {
+              backgroundColor: palette.surface,
+              borderColor: palette.border,
+            },
+          ]}
+        >
           <Text style={styles.emptyTitle}>No courses in history yet</Text>
           <Text style={styles.emptyText}>
             Completed and partial courses will appear here once you start progressing through a
@@ -52,7 +61,13 @@ export default function HistoryScreen() {
                   },
                 })
               }
-              style={styles.card}
+              style={[
+                styles.card,
+                {
+                  backgroundColor: palette.surface,
+                  borderColor: palette.border,
+                },
+              ]}
             >
               <View style={styles.cardBody}>
                 <Text style={styles.cardTitle}>{course.name}</Text>
@@ -63,8 +78,24 @@ export default function HistoryScreen() {
                   {formatDurationFromSeconds(getCourseDurationSeconds(course))}
                 </Text>
               </View>
-              <SquircleView style={[styles.statusBadge, isPartial && styles.statusBadgePartial]}>
-                <Text style={[styles.statusBadgeText, isPartial && styles.statusBadgeTextPartial]}>
+              <SquircleView
+                style={[
+                  styles.statusBadge,
+                  {
+                    backgroundColor: isPartial
+                      ? palette.warningSurface
+                      : palette.primaryGradientStart,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.statusBadgeText,
+                    {
+                      color: isPartial ? palette.warningText : palette.primaryForeground,
+                    },
+                  ]}
+                >
                   {isPartial ? "Partial" : "Done"}
                 </Text>
               </SquircleView>
@@ -95,8 +126,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   emptyState: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
     borderRadius: radius.lg,
     borderWidth: 1,
     gap: spacing.sm,
@@ -117,8 +146,6 @@ const styles = StyleSheet.create({
   },
   card: {
     alignItems: "center",
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
     borderRadius: radius.md,
     borderWidth: 1,
     flexDirection: "row",
@@ -132,24 +159,18 @@ const styles = StyleSheet.create({
   },
   statusBadge: {
     alignItems: "center",
-    backgroundColor: colors.primaryGradientStart,
     borderRadius: radius.pill,
     justifyContent: "center",
     minWidth: 74,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
-  statusBadgePartial: {
-    backgroundColor: "#F3E0BF",
-  },
   statusBadgeText: {
-    color: colors.surface,
     fontSize: 13,
     fontWeight: "700",
   },
-  statusBadgeTextPartial: {
-    color: "#8A5A1F",
-  },
+  statusBadgePartial: {},
+  statusBadgeTextPartial: {},
   cardTitle: {
     color: colors.text,
     fontSize: 16,

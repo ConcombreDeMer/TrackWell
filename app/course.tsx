@@ -10,7 +10,7 @@ import {
   formatDurationFromSeconds,
   useProgramsStore,
 } from "../features/programs";
-import { colors, radius, spacing } from "../theme";
+import { colors, radius, spacing, useThemePalette } from "../theme";
 import { SquircleButton, SquircleView } from "../ui/Squircle";
 
 type CourseStepGroup =
@@ -28,6 +28,7 @@ type CourseStepGroup =
 
 export default function CourseScreen() {
   const router = useRouter();
+  const palette = useThemePalette();
   const { courseId, draft, programId, weekIndex } = useLocalSearchParams<{
     courseId?: string;
     draft?: string;
@@ -54,9 +55,9 @@ export default function CourseScreen() {
 
   if (!source) {
     return (
-      <View style={styles.overlay}>
-        <View style={styles.sheet}>
-          <View style={styles.handle} />
+      <View style={[styles.overlay, { backgroundColor: palette.background }]}>
+        <View style={[styles.sheet, { backgroundColor: palette.background }]}>
+          <View style={[styles.handle, { backgroundColor: palette.border }]} />
           <Text style={styles.title}>Course not found</Text>
           <Text style={styles.subtitle}>
             The selected course could not be loaded from the current program.
@@ -171,9 +172,9 @@ export default function CourseScreen() {
   }
 
   return (
-    <View style={styles.overlay}>
-      <View style={styles.sheet}>
-        <View style={styles.handle} />
+    <View style={[styles.overlay, { backgroundColor: palette.background }]}>
+      <View style={[styles.sheet, { backgroundColor: palette.background }]}>
+        <View style={[styles.handle, { backgroundColor: palette.border }]} />
 
         <View style={styles.header}>
           <View style={styles.headerText}>
@@ -196,13 +197,27 @@ export default function CourseScreen() {
             <View style={styles.feedbackWrap}>
             <View style={styles.feedbackTopRow}>
                 <SquircleView
-                  style={[styles.completedBadge, isPartialCourse && styles.partialBadge]}
+                  style={[
+                    styles.completedBadge,
+                    {
+                      backgroundColor: isPartialCourse
+                        ? palette.warningSurface
+                        : palette.primaryGradientStart,
+                    },
+                  ]}
                 >
-                  <Text style={styles.completedBadgeText}>
+                  <Text
+                    style={[
+                      styles.completedBadgeText,
+                      {
+                        color: isPartialCourse ? palette.warningText : palette.primaryForeground,
+                      },
+                    ]}
+                  >
                     {isPartialCourse ? "Partial" : "Done"}
                   </Text>
                   <Ionicons
-                    color={colors.surface}
+                    color={isPartialCourse ? palette.warningText : palette.primaryForeground}
                     name={isPartialCourse ? "remove-circle-outline" : "checkmark"}
                     size={24}
                   />
@@ -210,20 +225,40 @@ export default function CourseScreen() {
                 <View style={styles.feedbackActions}>
                   <SquircleButton
                     onPress={handleEditFeedback}
-                    style={styles.iconSquare}
+                    style={[
+                      styles.iconSquare,
+                      {
+                        backgroundColor: palette.surfaceMuted,
+                        borderColor: palette.border,
+                      },
+                    ]}
                   >
-                    <Ionicons color="#7A7A7A" name="create-outline" size={26} />
+                    <Ionicons color={palette.textMuted} name="create-outline" size={26} />
                   </SquircleButton>
                   <SquircleButton
                     onPress={handleRetry}
-                    style={styles.iconSquare}
+                    style={[
+                      styles.iconSquare,
+                      {
+                        backgroundColor: palette.surfaceMuted,
+                        borderColor: palette.border,
+                      },
+                    ]}
                   >
-                    <Ionicons color="#7A7A7A" name="refresh" size={28} />
+                    <Ionicons color={palette.textMuted} name="refresh" size={28} />
                   </SquircleButton>
                 </View>
               </View>
 
-              <SquircleView style={styles.feedbackCard}>
+              <SquircleView
+                style={[
+                  styles.feedbackCard,
+                  {
+                    backgroundColor: palette.surface,
+                    borderColor: palette.border,
+                  },
+                ]}
+              >
                 <FeedbackRow
                   label="Date"
                   value={formatFeedbackDate(selectedSource.course.feedback.completedAt)}
@@ -250,7 +285,15 @@ export default function CourseScreen() {
             </View>
           ) : null}
 
-          <SquircleView style={styles.card}>
+          <SquircleView
+            style={[
+              styles.card,
+              {
+                backgroundColor: palette.surface,
+                borderColor: palette.border,
+              },
+            ]}
+          >
             {groups.map((group, index) => (
               <View key={group.key}>
                 {group.kind === "single" ? (
@@ -258,7 +301,9 @@ export default function CourseScreen() {
                 ) : (
                   <RepeatedPairBlock repeatCount={group.repeatCount} steps={group.steps} />
                 )}
-                {index < groups.length - 1 ? <View style={styles.connector} /> : null}
+                {index < groups.length - 1 ? (
+                  <View style={[styles.connector, { backgroundColor: palette.border }]} />
+                ) : null}
               </View>
             ))}
           </SquircleView>
@@ -279,7 +324,8 @@ function FeedbackRow({
   label: string;
   value: string;
 }) {
-  const badgeStyle = getFeedbackBadgeStyle(badgeTone);
+  const palette = useThemePalette();
+  const badgeStyle = getFeedbackBadgeStyle(badgeTone, palette);
 
   return (
     <View style={styles.feedbackRow}>
@@ -295,7 +341,10 @@ function FeedbackRow({
   );
 }
 
-function getFeedbackBadgeStyle(tone: "green" | "yellow" | "orange" | "red" | "neutral") {
+function getFeedbackBadgeStyle(
+  tone: "green" | "yellow" | "orange" | "red" | "neutral",
+  palette: ReturnType<typeof useThemePalette>,
+) {
   switch (tone) {
     case "green":
       return {
@@ -319,8 +368,8 @@ function getFeedbackBadgeStyle(tone: "green" | "yellow" | "orange" | "red" | "ne
       };
     default:
       return {
-        backgroundColor: "#D9D9D9",
-        textColor: colors.text,
+        backgroundColor: palette.surfaceMuted,
+        textColor: palette.text,
       };
   }
 }
@@ -501,13 +550,14 @@ function groupCourseSteps(steps: Course["steps"]): CourseStepGroup[] {
 }
 
 function CourseStepRow({ step }: { step: Course["steps"][number] }) {
+  const palette = useThemePalette();
   const iconName = step.type === "walk" ? "walk-outline" : "flash-outline";
   const label = step.type === "walk" ? "walk" : "run";
 
   return (
     <View style={styles.stepRow}>
-      <Ionicons color={colors.text} name={iconName} size={32} />
-      <Text style={styles.stepLabel}>
+      <Ionicons color={palette.text} name={iconName} size={32} />
+      <Text style={[styles.stepLabel, { color: palette.text }]}>
         {formatDurationFromSeconds(step.durationSeconds)} - {label}
       </Text>
     </View>
@@ -521,9 +571,11 @@ function RepeatedPairBlock({
   repeatCount: number;
   steps: [Course["steps"][number], Course["steps"][number]];
 }) {
+  const palette = useThemePalette();
+
   return (
-    <SquircleView style={styles.repeatBlock}>
-      <Text style={styles.repeatCount}>x{repeatCount}</Text>
+    <SquircleView style={[styles.repeatBlock, { backgroundColor: palette.surfaceMuted }]}>
+      <Text style={[styles.repeatCount, { color: palette.text }]}>x{repeatCount}</Text>
       <CourseStepRow step={steps[0]} />
       <CourseStepRow step={steps[1]} />
     </SquircleView>
@@ -531,9 +583,14 @@ function RepeatedPairBlock({
 }
 
 function CloseButton({ onPress }: { onPress: () => void }) {
+  const palette = useThemePalette();
+
   return (
-    <SquircleButton onPress={onPress} style={styles.closeButton}>
-      <Ionicons color={colors.text} name="close" size={26} />
+    <SquircleButton
+      onPress={onPress}
+      style={[styles.closeButton, { backgroundColor: palette.surface }]}
+    >
+      <Ionicons color={palette.text} name="close" size={26} />
     </SquircleButton>
   );
 }
@@ -545,7 +602,6 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   sheet: {
-    backgroundColor: colors.background,
     borderTopLeftRadius: 36,
     borderTopRightRadius: 36,
     minHeight: "100%",
@@ -554,7 +610,6 @@ const styles = StyleSheet.create({
   },
   handle: {
     alignSelf: "center",
-    backgroundColor: "#C7C7C7",
     borderRadius: radius.pill,
     height: 6,
     marginBottom: spacing.lg,
@@ -587,7 +642,6 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     alignItems: "center",
-    backgroundColor: colors.surface,
     borderRadius: radius.pill,
     elevation: 2,
     height: 52,
@@ -616,25 +670,16 @@ const styles = StyleSheet.create({
   },
   completedBadge: {
     alignItems: "center",
-    backgroundColor: colors.primaryGradientStart,
     borderRadius: radius.md,
     flexDirection: "row",
     gap: spacing.sm,
     minHeight: 58,
     paddingHorizontal: spacing.lg,
   },
-  partialBadge: {
-    backgroundColor: "#E4A35A",
-  },
-  completedBadgeText: {
-    color: colors.surface,
-    fontSize: 17,
-    fontWeight: "700",
-  },
+  partialBadge: {},
+  completedBadgeText: { fontSize: 17, fontWeight: "700" },
   iconSquare: {
     alignItems: "center",
-    backgroundColor: "#E4E4E4",
-    borderColor: "#D0D0D0",
     borderRadius: radius.md,
     borderWidth: 1,
     height: 58,
@@ -642,8 +687,6 @@ const styles = StyleSheet.create({
     width: 66,
   },
   feedbackCard: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
     borderRadius: 24,
     borderWidth: 1,
     gap: spacing.md,
@@ -687,8 +730,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   card: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
     borderRadius: 28,
     borderWidth: 1,
     paddingHorizontal: spacing.lg,
@@ -701,19 +742,16 @@ const styles = StyleSheet.create({
     minHeight: 56,
   },
   stepLabel: {
-    color: colors.text,
     fontSize: 17,
     fontWeight: "600",
   },
   connector: {
-    backgroundColor: "#7A7A7A",
     borderRadius: radius.pill,
     height: 64,
     marginLeft: 15,
     width: 4,
   },
   repeatBlock: {
-    backgroundColor: "#D8D8D8",
     borderRadius: 28,
     gap: spacing.sm,
     paddingHorizontal: spacing.md,
@@ -721,7 +759,6 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   repeatCount: {
-    color: colors.text,
     fontSize: 26,
     fontWeight: "800",
     position: "absolute",

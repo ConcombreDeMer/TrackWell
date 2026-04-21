@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
 
-import { colors, radius, spacing } from "../theme";
+import { radius, spacing, useThemePalette } from "../theme";
 import { SquircleButton, SquircleView } from "./Squircle";
 
 type CounterFieldProps = {
@@ -18,16 +18,26 @@ export function CounterField({
   min = 1,
   max = 52,
 }: CounterFieldProps) {
+  const palette = useThemePalette();
+
   return (
     <View style={styles.wrapper}>
-      <Text style={styles.label}>{label}</Text>
-      <SquircleView style={styles.controls}>
+      <Text style={[styles.label, { color: palette.text }]}>{label}</Text>
+      <SquircleView
+        style={[
+          styles.controls,
+          {
+            backgroundColor: palette.surface,
+            borderColor: palette.border,
+          },
+        ]}
+      >
         <CounterButton
           disabled={value <= min}
           label="-"
           onPress={() => onChange(Math.max(min, value - 1))}
         />
-        <Text style={styles.value}>{value}</Text>
+        <Text style={[styles.value, { color: palette.text }]}>{value}</Text>
         <CounterButton
           disabled={value >= max}
           label="+"
@@ -45,13 +55,27 @@ type CounterButtonProps = {
 };
 
 function CounterButton({ label, onPress, disabled }: CounterButtonProps) {
+  const palette = useThemePalette();
+
   return (
     <SquircleButton
       disabled={disabled}
       onPress={onPress}
-      style={[styles.button, disabled && styles.buttonDisabled]}
+      style={[
+        styles.button,
+        { backgroundColor: palette.surfaceMuted },
+        disabled && styles.buttonDisabled,
+      ]}
     >
-      <Text style={[styles.buttonLabel, disabled && styles.buttonLabelDisabled]}>{label}</Text>
+      <Text
+        style={[
+          styles.buttonLabel,
+          { color: disabled ? palette.textMuted : palette.text },
+          disabled && styles.buttonLabelDisabled,
+        ]}
+      >
+        {label}
+      </Text>
     </SquircleButton>
   );
 }
@@ -60,15 +84,9 @@ const styles = StyleSheet.create({
   wrapper: {
     gap: spacing.xs,
   },
-  label: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: "600",
-  },
+  label: { fontSize: 16, fontWeight: "600" },
   controls: {
     alignItems: "center",
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
     borderRadius: radius.md,
     borderWidth: 1,
     flexDirection: "row",
@@ -78,7 +96,6 @@ const styles = StyleSheet.create({
   },
   button: {
     alignItems: "center",
-    backgroundColor: colors.surfaceMuted,
     borderRadius: radius.pill,
     height: 40,
     justifyContent: "center",
@@ -88,17 +105,10 @@ const styles = StyleSheet.create({
     opacity: 0.45,
   },
   buttonLabel: {
-    color: colors.text,
     fontSize: 24,
     fontWeight: "600",
     lineHeight: 24,
   },
-  buttonLabelDisabled: {
-    color: colors.textMuted,
-  },
-  value: {
-    color: colors.text,
-    fontSize: 28,
-    fontWeight: "700",
-  },
+  buttonLabelDisabled: {},
+  value: { fontSize: 28, fontWeight: "700" },
 });

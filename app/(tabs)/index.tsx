@@ -1,16 +1,18 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { AppLogo } from "../../components/branding/AppLogo";
 import { NextCourseCard } from "../../components/home/NextCourseCard";
 import { SelectedProgramCard } from "../../components/home/SelectedProgramCard";
 import { getNextCourse, useProgramsStore } from "../../features/programs";
-import { colors, spacing } from "../../theme";
+import { colors, spacing, useThemePalette } from "../../theme";
 import { PrimaryButton } from "../../ui/PrimaryButton";
 import { SquircleView } from "../../ui/Squircle";
 
 export default function HomeScreen() {
   const router = useRouter();
+  const palette = useThemePalette();
   const { getSelectedProgram } = useProgramsStore();
   const selectedProgram = getSelectedProgram();
   const nextCourse = selectedProgram ? getNextCourse(selectedProgram) : undefined;
@@ -18,8 +20,22 @@ export default function HomeScreen() {
   return (
     <ScrollView contentContainerStyle={styles.content} style={styles.screen}>
       <View style={styles.header}>
-        <AppLogo size={52} />
-        <Text style={styles.title}>Welcome back</Text>
+        <View style={styles.headerMain}>
+          <AppLogo size={52} />
+          <Text style={styles.title}>Welcome back</Text>
+        </View>
+        <Pressable
+          onPress={() => router.push("/settings")}
+          style={[
+            styles.settingsButton,
+            {
+              backgroundColor: palette.surface,
+              borderColor: palette.border,
+            },
+          ]}
+        >
+          <Ionicons color={palette.text} name="settings-outline" size={20} />
+        </Pressable>
       </View>
 
       {selectedProgram ? (
@@ -61,7 +77,15 @@ export default function HomeScreen() {
               weekIndex={nextCourse.weekIndex}
             />
           ) : (
-            <SquircleView style={styles.doneState}>
+            <SquircleView
+              style={[
+                styles.doneState,
+                {
+                  backgroundColor: palette.surface,
+                  borderColor: palette.border,
+                },
+              ]}
+            >
               <Text style={styles.doneTitle}>All courses completed</Text>
               <Text style={styles.doneText}>
                 This selected program is fully completed. Great work.
@@ -70,7 +94,15 @@ export default function HomeScreen() {
           )}
         </>
       ) : (
-        <SquircleView style={styles.emptyState}>
+        <SquircleView
+          style={[
+            styles.emptyState,
+            {
+              backgroundColor: palette.surface,
+              borderColor: palette.border,
+            },
+          ]}
+        >
           <Text style={styles.emptyTitle}>No selected program</Text>
           <Text style={styles.emptyText}>
             Select one program to pin it here and access it quickly from Home.
@@ -95,6 +127,10 @@ const styles = StyleSheet.create({
     paddingBottom: 120,
   },
   header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  headerMain: {
     alignItems: "center",
     flexDirection: "row",
     gap: spacing.md,
@@ -104,9 +140,15 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: "800",
   },
+  settingsButton: {
+    alignItems: "center",
+    borderRadius: 14,
+    borderWidth: 1,
+    height: 40,
+    justifyContent: "center",
+    width: 40,
+  },
   emptyState: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
     borderRadius: 20,
     borderWidth: 1,
     gap: spacing.md,
@@ -123,8 +165,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   doneState: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
     borderRadius: 20,
     borderWidth: 1,
     gap: spacing.sm,

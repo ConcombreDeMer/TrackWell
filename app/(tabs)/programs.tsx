@@ -3,12 +3,13 @@ import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { ProgramSummaryCard } from "../../components/programs/ProgramSummaryCard";
 import { useProgramsStore } from "../../features/programs";
-import { colors, spacing } from "../../theme";
+import { colors, spacing, useThemePalette } from "../../theme";
 import { ActionCardButton } from "../../ui/ActionCardButton";
 import { SquircleView } from "../../ui/Squircle";
 
 export default function ProgramsScreen() {
   const router = useRouter();
+  const palette = useThemePalette();
   const { clearSelectedProgram, programs, resetProgramDraft, selectedProgramId } = useProgramsStore();
 
   return (
@@ -30,7 +31,15 @@ export default function ProgramsScreen() {
 
       <View style={styles.list}>
         {programs.length === 0 ? (
-          <SquircleView style={styles.emptyState}>
+          <SquircleView
+            style={[
+              styles.emptyState,
+              {
+                backgroundColor: palette.surface,
+                borderColor: palette.border,
+              },
+            ]}
+          >
             <Text style={styles.emptyTitle}>No programs yet</Text>
             <Text style={styles.emptyText}>
               Create your first running program to generate weeks, then add courses inside each week.
@@ -94,8 +103,6 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   emptyState: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
     borderRadius: 20,
     borderWidth: 1,
     gap: spacing.sm,

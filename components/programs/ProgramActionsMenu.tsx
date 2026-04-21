@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { ActionSheetIOS, Alert, Platform, StyleSheet } from "react-native";
 
-import { colors, radius } from "../../theme";
+import { colors, radius, useThemePalette } from "../../theme";
 import { SquircleButton } from "../../ui/Squircle";
 
 type ProgramActionsMenuProps = {
@@ -10,7 +10,9 @@ type ProgramActionsMenuProps = {
 };
 
 export function ProgramActionsMenu({ onDelete, onEdit }: ProgramActionsMenuProps) {
+  const palette = useThemePalette();
   const swiftUIMenu = getSwiftUIMenu();
+  const userInterfaceStyle = palette.statusBarStyle === "light" ? "dark" : "light";
 
   if (swiftUIMenu && Platform.OS === "ios") {
     const { Button, ContextMenu, Host } = swiftUIMenu;
@@ -19,8 +21,16 @@ export function ProgramActionsMenu({ onDelete, onEdit }: ProgramActionsMenuProps
       <Host matchContents>
         <ContextMenu activationMethod="singlePress">
           <ContextMenu.Trigger>
-            <SquircleButton style={styles.button}>
-              <Ionicons color={colors.text} name="ellipsis-horizontal" size={24} />
+            <SquircleButton
+              style={[
+                styles.button,
+                {
+                  backgroundColor: palette.surface,
+                  borderColor: palette.border,
+                },
+              ]}
+            >
+              <Ionicons color={palette.text} name="ellipsis-horizontal" size={24} />
             </SquircleButton>
           </ContextMenu.Trigger>
           <ContextMenu.Items>
@@ -43,6 +53,7 @@ export function ProgramActionsMenu({ onDelete, onEdit }: ProgramActionsMenuProps
           cancelButtonIndex: 2,
           destructiveButtonIndex: 1,
           options: ["Edit Program", "Delete Program", "Cancel"],
+          userInterfaceStyle,
         },
         (buttonIndex) => {
           if (buttonIndex === 0) {
@@ -64,8 +75,17 @@ export function ProgramActionsMenu({ onDelete, onEdit }: ProgramActionsMenuProps
   }
 
   return (
-    <SquircleButton onPress={openFallbackMenu} style={styles.button}>
-      <Ionicons color={colors.text} name="ellipsis-horizontal" size={24} />
+    <SquircleButton
+      onPress={openFallbackMenu}
+      style={[
+        styles.button,
+        {
+          backgroundColor: palette.surface,
+          borderColor: palette.border,
+        },
+      ]}
+    >
+      <Ionicons color={palette.text} name="ellipsis-horizontal" size={24} />
     </SquircleButton>
   );
 }
@@ -94,6 +114,8 @@ const styles = StyleSheet.create({
   button: {
     alignItems: "center",
     backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderWidth: 1,
     borderRadius: radius.pill,
     elevation: 2,
     height: 52,

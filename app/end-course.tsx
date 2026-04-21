@@ -8,7 +8,7 @@ import {
   PainLevel,
   useProgramsStore,
 } from "../features/programs";
-import { colors, radius, spacing } from "../theme";
+import { colors, radius, spacing, useThemePalette } from "../theme";
 import { PrimaryButton } from "../ui/PrimaryButton";
 import { SectionCard } from "../ui/SectionCard";
 import { SquircleButton, SquircleView } from "../ui/Squircle";
@@ -29,6 +29,7 @@ const painOptions: { label: string; value: PainLevel }[] = [
 
 export default function EndCourseScreen() {
   const router = useRouter();
+  const palette = useThemePalette();
   const { courseId, edit, partial, programId, weekIndex } = useLocalSearchParams<{
     courseId?: string;
     edit?: string;
@@ -100,7 +101,7 @@ export default function EndCourseScreen() {
         </Text>
         <Text style={styles.subtitle}>{selectedCourse.name} from {selectedProgram.name}</Text>
         {isPartialEnd ? (
-          <SquircleView style={styles.partialBadge}>
+          <SquircleView style={[styles.partialBadge, { backgroundColor: palette.surfaceMuted }]}>
             <Text style={styles.partialBadgeText}>Not completed</Text>
           </SquircleView>
         ) : null}
@@ -165,12 +166,26 @@ function ChoiceChip({
   label: string;
   onPress: () => void;
 }) {
+  const palette = useThemePalette();
+
   return (
     <SquircleButton
       onPress={onPress}
-      style={[styles.chip, active && styles.chipActive]}
+      style={[
+        styles.chip,
+        {
+          backgroundColor: active ? palette.primaryGradientStart : palette.surfaceMuted,
+        },
+      ]}
     >
-      <Text style={[styles.chipLabel, active && styles.chipLabelActive]}>{label}</Text>
+      <Text
+        style={[
+          styles.chipLabel,
+          { color: active ? palette.primaryForeground : palette.text },
+        ]}
+      >
+        {label}
+      </Text>
     </SquircleButton>
   );
 }
@@ -182,14 +197,16 @@ function FeelingInput({
   onChangeText: (value: string) => void;
   value: string;
 }) {
+  const palette = useThemePalette();
+
   return (
-    <SquircleView style={styles.textAreaShell}>
+    <SquircleView style={[styles.textAreaShell, { backgroundColor: palette.surfaceMuted }]}>
       <TextInput
         multiline
         onChangeText={onChangeText}
         placeholder="Write a short note..."
-        placeholderTextColor={colors.textMuted}
-        style={styles.textArea}
+        placeholderTextColor={palette.textMuted}
+        style={[styles.textArea, { color: palette.text }]}
         value={value}
       />
     </SquircleView>
@@ -244,28 +261,17 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   chip: {
-    backgroundColor: colors.surfaceMuted,
     borderRadius: radius.pill,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
-  chipActive: {
-    backgroundColor: colors.primaryGradientStart,
-  },
-  chipLabel: {
-    color: colors.text,
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  chipLabelActive: {
-    color: colors.surface,
-  },
+  chipActive: {},
+  chipLabel: { fontSize: 14, fontWeight: "600" },
+  chipLabelActive: {},
   textAreaShell: {
-    backgroundColor: colors.surfaceMuted,
     borderRadius: radius.md,
   },
   textArea: {
-    color: colors.text,
     minHeight: 90,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,

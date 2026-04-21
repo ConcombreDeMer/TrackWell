@@ -12,7 +12,7 @@ import {
 } from "react-native";
 
 import { Step, formatDurationFromSeconds } from "../../features/programs";
-import { colors, radius, spacing } from "../../theme";
+import { colors, radius, spacing, useThemePalette } from "../../theme";
 import { SquircleView } from "../../ui/Squircle";
 
 type StepTimelineSheetProps = {
@@ -98,6 +98,7 @@ function StepTimelineContent({
   progressPercent,
   steps,
 }: Omit<StepTimelineSheetProps, "visible" | "onClose">) {
+  const palette = useThemePalette();
   const stepsToRender = steps.slice(currentStepIndex).map((step, offset) => ({
     index: currentStepIndex + offset,
     step,
@@ -105,7 +106,7 @@ function StepTimelineContent({
   const completedLabel = `${completedStepsCount + 1}/${steps.length}`;
 
   return (
-    <SquircleView style={styles.sheet}>
+    <SquircleView style={[styles.sheet, { backgroundColor: palette.background }]}>
       <View style={styles.header}>
         <View>
           <Text style={styles.title}>Workout Steps</Text>
@@ -126,16 +127,26 @@ function StepTimelineContent({
           return (
             <SquircleView
               key={step.id}
-              style={[styles.stepRow, isCurrent && styles.stepRowCurrent]}
+              style={[
+                styles.stepRow,
+                {
+                  backgroundColor: isCurrent ? palette.primaryGradientStart : palette.surface,
+                },
+              ]}
             >
               <View style={styles.stepHead}>
                 <View style={styles.stepTitleRow}>
                   <Ionicons
-                    color={isCurrent ? colors.surface : colors.text}
+                    color={isCurrent ? palette.primaryForeground : palette.text}
                     name={iconName}
                     size={18}
                   />
-                  <Text style={[styles.stepLabel, isCurrent && styles.stepLabelCurrent]}>
+                  <Text
+                    style={[
+                      styles.stepLabel,
+                      { color: isCurrent ? palette.primaryForeground : palette.text },
+                    ]}
+                  >
                     {label}
                   </Text>
                 </View>
@@ -143,14 +154,23 @@ function StepTimelineContent({
                 <Text
                   style={[
                     styles.stepIndex,
-                    isCurrent && styles.stepIndexCurrent,
+                    {
+                      color: isCurrent ? palette.primaryForegroundMuted : palette.textMuted,
+                    },
                   ]}
                 >
                   Step {index + 1}
                 </Text>
               </View>
 
-              <Text style={[styles.stepDuration, isCurrent && styles.stepDurationCurrent]}>
+              <Text
+                style={[
+                  styles.stepDuration,
+                  {
+                    color: isCurrent ? palette.primaryForegroundMuted : palette.textMuted,
+                  },
+                ]}
+              >
                 {formatDurationFromSeconds(step.durationSeconds)}
               </Text>
 
@@ -221,15 +241,12 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.md,
   },
   stepRow: {
-    backgroundColor: "#ffffff",
     borderRadius: 22,
     gap: 8,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
   },
-  stepRowCurrent: {
-    backgroundColor: colors.primaryGradientStart,
-  },
+  stepRowCurrent: {},
   stepHead: {
     alignItems: "center",
     flexDirection: "row",
@@ -240,32 +257,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: spacing.xs,
   },
-  stepLabel: {
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: "700",
-  },
-  stepLabelCurrent: {
-    color: colors.surface,
-  },
-  stepIndex: {
-    color: colors.textMuted,
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  stepIndexCurrent: {
-    color: "rgba(255,255,255,0.7)",
-  },
-  stepDuration: {
-    color: colors.textMuted,
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  stepDurationCurrent: {
-    color: "rgba(255,255,255,0.82)",
-  },
+  stepLabel: { fontSize: 18, fontWeight: "700" },
+  stepLabelCurrent: {},
+  stepIndex: { fontSize: 13, fontWeight: "700" },
+  stepIndexCurrent: {},
+  stepDuration: { fontSize: 15, fontWeight: "600" },
+  stepDurationCurrent: {},
   progressTrack: {
-    backgroundColor: "rgba(255,255,255,0.14)",
+    backgroundColor: colors.primaryForegroundMuted,
     borderRadius: radius.pill,
     height: 6,
     marginTop: spacing.xs,

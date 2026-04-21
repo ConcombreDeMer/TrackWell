@@ -1,6 +1,6 @@
 import { StyleSheet, Text, TextInput, TextInputProps, View } from "react-native";
 
-import { colors, radius, spacing } from "../theme";
+import { colors, radius, spacing, useThemePalette } from "../theme";
 import { SquircleView } from "./Squircle";
 
 type TextFieldProps = TextInputProps & {
@@ -8,14 +8,26 @@ type TextFieldProps = TextInputProps & {
 };
 
 export function TextField({ label, multiline, style, ...props }: TextFieldProps) {
+  const palette = useThemePalette();
+  const inputBackgroundColor =
+    palette.statusBarStyle === "light" ? palette.surfaceMuted : palette.surface;
+
   return (
     <View style={styles.wrapper}>
-      <Text style={styles.label}>{label}</Text>
-      <SquircleView style={styles.inputShell}>
+      <Text style={[styles.label, { color: palette.text }]}>{label}</Text>
+      <SquircleView
+        style={[
+          styles.inputShell,
+          {
+            backgroundColor: inputBackgroundColor,
+            borderColor: palette.border,
+          },
+        ]}
+      >
         <TextInput
           multiline={multiline}
-          placeholderTextColor={colors.textMuted}
-          style={[styles.input, multiline && styles.multiline, style]}
+          placeholderTextColor={palette.textMuted}
+          style={[styles.input, { color: palette.text }, multiline && styles.multiline, style]}
           {...props}
         />
       </SquircleView>
@@ -27,19 +39,12 @@ const styles = StyleSheet.create({
   wrapper: {
     gap: spacing.xs,
   },
-  label: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: "600",
-  },
+  label: { fontSize: 16, fontWeight: "600" },
   inputShell: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
     borderRadius: radius.md,
     borderWidth: 1,
   },
   input: {
-    color: colors.text,
     fontSize: 16,
     minHeight: 52,
     paddingHorizontal: spacing.md,

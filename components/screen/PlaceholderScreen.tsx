@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 
-import { colors, radius, spacing } from "../../theme";
+import { colors, radius, spacing, useThemePalette } from "../../theme";
 import { SquircleView } from "../../ui/Squircle";
 
 type PlaceholderScreenProps = {
@@ -19,10 +19,20 @@ export function PlaceholderScreen({
   footer,
   headerSlot,
 }: PlaceholderScreenProps) {
+  const palette = useThemePalette();
+
   return (
     <ScrollView contentContainerStyle={styles.content} style={styles.screen}>
       {headerSlot}
-      <SquircleView style={styles.card}>
+      <SquircleView
+        style={[
+          styles.card,
+          {
+            backgroundColor: palette.surface,
+            borderColor: palette.border,
+          },
+        ]}
+      >
         <Text style={styles.title}>{title}</Text>
         <Text style={styles.description}>{description}</Text>
       </SquircleView>
@@ -44,8 +54,6 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xxl,
   },
   card: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
     borderRadius: radius.lg,
     borderWidth: 1,
     gap: spacing.sm,

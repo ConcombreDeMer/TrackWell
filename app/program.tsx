@@ -15,13 +15,14 @@ import {
   getProgramCourseCount,
   useProgramsStore,
 } from "../features/programs";
-import { colors, radius, spacing } from "../theme";
+import { colors, radius, spacing, useThemePalette } from "../theme";
 import { ActionCardButton } from "../ui/ActionCardButton";
 import { SectionCard } from "../ui/SectionCard";
 import { SquircleButton, SquircleView } from "../ui/Squircle";
 
 export default function ProgramScreen() {
   const router = useRouter();
+  const palette = useThemePalette();
   const [showCompleted, setShowCompleted] = useState(false);
   const { programId } = useLocalSearchParams<{ programId?: string }>();
   const {
@@ -150,9 +151,17 @@ export default function ProgramScreen() {
             style={styles.checkboxRow}
           >
             <Text style={styles.checkboxLabel}>Completed</Text>
-            <SquircleView style={[styles.checkbox, showCompleted && styles.checkboxActive]}>
+            <SquircleView
+              style={[
+                styles.checkbox,
+                {
+                  backgroundColor: showCompleted ? palette.success : palette.surface,
+                  borderColor: showCompleted ? palette.success : palette.border,
+                },
+              ]}
+            >
               {showCompleted ? (
-                <Ionicons color={colors.text} name="checkmark" size={18} />
+                <Ionicons color={palette.text} name="checkmark" size={18} />
               ) : null}
             </SquircleView>
           </Pressable>
@@ -173,7 +182,12 @@ export default function ProgramScreen() {
           </View>
 
           {week.courses.length === 0 ? (
-            <SquircleView style={styles.emptyCourseState}>
+            <SquircleView
+              style={[
+                styles.emptyCourseState,
+                { backgroundColor: palette.surfaceMuted },
+              ]}
+            >
               <Text style={styles.emptyCourseText}>
                 Add the first course for this week to start building the plan.
               </Text>
@@ -196,7 +210,10 @@ export default function ProgramScreen() {
                         },
                     })
                   }
-                  style={styles.courseCard}
+                  style={[
+                    styles.courseCard,
+                    { backgroundColor: palette.surfaceMuted },
+                  ]}
                 >
                   <View style={styles.courseBody}>
                     <Text style={styles.courseTitle}>{course.name || `Course ${index + 1}`}</Text>
@@ -214,7 +231,7 @@ export default function ProgramScreen() {
                     />
                   ) : isPartialCourse ? (
                     <MaterialCommunityIcons
-                      color="#E4A35A"
+                      color={palette.warningText}
                       name="waves"
                       size={24}
                       style={styles.courseCompletedIcon}
@@ -298,18 +315,13 @@ const styles = StyleSheet.create({
   },
   checkbox: {
     alignItems: "center",
-    backgroundColor: colors.surface,
-    borderColor: "#C6C6C6",
     borderRadius: 10,
     borderWidth: 1,
     height: 36,
     justifyContent: "center",
     width: 36,
   },
-  checkboxActive: {
-    backgroundColor: colors.success,
-    borderColor: colors.success,
-  },
+  checkboxActive: {},
   weekHeader: {
     gap: spacing.md,
   },
@@ -326,7 +338,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   emptyCourseState: {
-    backgroundColor: colors.surfaceMuted,
     borderRadius: radius.md,
     padding: spacing.md,
   },
@@ -340,7 +351,6 @@ const styles = StyleSheet.create({
   },
   courseCard: {
     alignItems: "center",
-    backgroundColor: colors.surfaceMuted,
     borderRadius: radius.md,
     flexDirection: "row",
     gap: spacing.md,

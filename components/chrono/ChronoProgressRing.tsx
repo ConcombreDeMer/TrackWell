@@ -2,7 +2,7 @@ import { AnimatedCircularProgress } from "react-native-circular-progress";
 import { useEffect, useRef } from "react";
 import { Animated, Easing, StyleSheet, View } from "react-native";
 
-import { colors } from "../../theme";
+import { useThemePalette, useThemePreferences } from "../../theme";
 
 type WorkoutVisualState = "idle" | "running" | "paused";
 
@@ -19,9 +19,17 @@ export function ChronoProgressRing({
   timeLabel,
   visualState,
 }: ChronoProgressRingProps) {
+  const palette = useThemePalette();
+  const { isDarkMode } = useThemePreferences();
   const pauseProgress = useRef(new Animated.Value(visualState === "paused" ? 1 : 0)).current;
   const inActiveStrokeColor =
-    visualState === "paused" ? "rgba(180, 180, 180, 0.45)" : "rgba(213, 213, 213, 0.45)";
+    visualState === "paused"
+      ? isDarkMode
+        ? "rgba(120,120,120,0.45)"
+        : "rgba(180,180,180,0.45)"
+      : isDarkMode
+        ? "rgba(255,255,255,0.18)"
+        : "rgba(213,213,213,0.45)";
 
   useEffect(() => {
     Animated.timing(pauseProgress, {
@@ -32,7 +40,7 @@ export function ChronoProgressRing({
     }).start();
   }, [pauseProgress, visualState]);
 
-  const overlayTone = visualState === "paused" ? "#202020" : colors.text;
+  const overlayTone = palette.text;
   const centerBackgroundOpacity = pauseProgress.interpolate({
     inputRange: [0, 1],
     outputRange: [0, 1],
@@ -74,7 +82,7 @@ export function ChronoProgressRing({
           padding={16}
           rotation={0}
           size={324}
-          tintColor="rgba(94, 94, 94, 0.92)"
+          tintColor={isDarkMode ? "rgba(230,230,230,0.92)" : "rgba(94,94,94,0.92)"}
           width={16}
           duration={1000}
           easing={Easing.inOut(Easing.linear)}
@@ -112,11 +120,14 @@ export function ChronoProgressRing({
                 <View style={[styles.pauseBar, { backgroundColor: overlayTone }]} />
               </Animated.View>
 
-              {visualState === "idle" ? <View style={styles.playIcon} /> : null}
+              {visualState === "idle" ? (
+                <View style={[styles.playIcon, { borderLeftColor: palette.text }]} />
+              ) : null}
 
               <Animated.Text
                 style={[
                   styles.timeLabel,
+                  { color: palette.text },
                   {
                     transform: [{ translateY: timeTranslateY }, { scale: timeScale }],
                   },
@@ -127,6 +138,7 @@ export function ChronoProgressRing({
               <Animated.Text
                 style={[
                   styles.secondaryLabel,
+                  { color: palette.textMuted },
                   {
                     opacity: secondaryOpacity,
                     transform: [{ translateY: secondaryTranslateY }],
@@ -186,22 +198,11 @@ const styles = StyleSheet.create({
     borderStyle: "solid",
     borderTopWidth: 28,
     borderBottomColor: "transparent",
-    borderLeftColor: colors.text,
     borderTopColor: "transparent",
     height: 0,
     marginLeft: 8,
     width: 0,
   },
-  timeLabel: {
-    color: colors.text,
-    fontSize: 88,
-    fontWeight: "800",
-    letterSpacing: -4.8,
-    lineHeight: 94,
-  },
-  secondaryLabel: {
-    color: "#8A8A8A",
-    fontSize: 20,
-    fontWeight: "500",
-  },
+  timeLabel: { fontSize: 88, fontWeight: "800", letterSpacing: -4.8, lineHeight: 94 },
+  secondaryLabel: { fontSize: 20, fontWeight: "500" },
 });

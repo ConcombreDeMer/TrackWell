@@ -27,7 +27,7 @@ import {
   publishWatchSession,
   WatchWorkoutSnapshot,
 } from "../features/watch-sync";
-import { colors, radius, spacing } from "../theme";
+import { colors, radius, spacing, useThemePalette, useThemePreferences } from "../theme";
 import { SquircleButton } from "../ui/Squircle";
 
 type WorkoutVisualState = "idle" | "running" | "paused" | "finished";
@@ -36,6 +36,8 @@ export default function ChronoScreen() {
   const router = useRouter();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const palette = useThemePalette();
+  const { isDarkMode } = useThemePreferences();
   const { autoStart, courseId, programId, weekIndex } = useLocalSearchParams<{
     autoStart?: string;
     courseId?: string;
@@ -929,7 +931,10 @@ export default function ChronoScreen() {
   }
 
   return (
-    <SafeAreaView edges={["top", "bottom"]} style={styles.screen}>
+    <SafeAreaView
+      edges={["top", "bottom"]}
+      style={[styles.screen, { backgroundColor: palette.background }]}
+    >
       <Animated.View
         pointerEvents="none"
         style={[styles.screenPauseOverlay, { opacity: pauseBackdropAnim }]}
@@ -949,14 +954,20 @@ export default function ChronoScreen() {
             <View style={styles.backPlaceholder} />
             <SquircleButton
               onPress={() => setIsStepSheetOpen(true)}
-              style={styles.topSheetButton}
+              style={[
+                styles.topSheetButton,
+                {
+                  backgroundColor: isDarkMode ? "rgba(38,38,38,0.9)" : "rgba(255,255,255,0.72)",
+                  borderColor: isDarkMode ? "rgba(82,82,82,0.36)" : palette.border,
+                },
+              ]}
             >
               <Animated.View
                 pointerEvents="none"
                 style={[styles.controlOverlay, styles.topSheetButtonOverlay, { opacity: pauseBackdropAnim }]}
               />
               <View style={styles.controlContent}>
-                <Ionicons color={colors.text} name="reorder-three-outline" size={22} />
+                <Ionicons color={palette.text} name="reorder-three-outline" size={22} />
               </View>
             </SquircleButton>
           </Animated.View>
@@ -1003,7 +1014,12 @@ export default function ChronoScreen() {
                           onPressOut={handleIdlePlayRelease}
                           style={styles.idlePlayButton}
                         >
-                          <Ionicons color="#6F6F6F" name="play" size={172} style={styles.idlePlayIcon} />
+                          <Ionicons
+                            color={palette.textMuted}
+                            name="play"
+                            size={172}
+                            style={styles.idlePlayIcon}
+                          />
                         </Pressable>
                       </Animated.View>
                     </View>
@@ -1037,7 +1053,11 @@ export default function ChronoScreen() {
                               transform: [{ translateY: stepIconTranslate }],
                             }}
                           >
-                            <MaterialCommunityIcons color="#8A8A8A" name={stepIconName} size={42} />
+                            <MaterialCommunityIcons
+                              color={palette.textMuted}
+                              name={stepIconName}
+                              size={42}
+                            />
                           </Animated.View>
                           <Animated.Text
                             style={[
@@ -1100,7 +1120,7 @@ export default function ChronoScreen() {
                       transform: [{ translateY: swipeHintTranslateY }],
                     }}
                   >
-                    <Ionicons color="#8E8E8E" name="chevron-up" size={18} />
+                    <Ionicons color={palette.textMuted} name="chevron-up" size={18} />
                   </Animated.View>
                   <Text style={styles.swipeHintText}>Swipe vers le haut pour plus de details</Text>
                 </Animated.View>
@@ -1108,13 +1128,22 @@ export default function ChronoScreen() {
 
               {shouldShowChronoInterface || isFinishTransitioning ? (
                 <Animated.View style={[styles.bottomActions, { opacity: launchContentOpacity }]}>
-                  <SquircleButton onPress={handleExitWorkout} style={styles.actionButton}>
+                  <SquircleButton
+                    onPress={handleExitWorkout}
+                    style={[
+                      styles.actionButton,
+                      {
+                        backgroundColor: palette.surface,
+                        borderColor: palette.border,
+                      },
+                    ]}
+                  >
                     <Animated.View
                       pointerEvents="none"
                       style={[styles.controlOverlay, styles.actionButtonOverlay, { opacity: pauseBackdropAnim }]}
                     />
                     <View style={styles.controlContent}>
-                      <Ionicons color={colors.text} name="stop" size={22} />
+                      <Ionicons color={palette.text} name="stop" size={22} />
                     </View>
                   </SquircleButton>
 
@@ -1124,6 +1153,10 @@ export default function ChronoScreen() {
                     style={[
                       styles.actionButton,
                       styles.actionButtonSecondary,
+                      {
+                        backgroundColor: palette.surface,
+                        borderColor: palette.border,
+                      },
                       !canSkip && styles.actionButtonDisabled,
                     ]}
                   >
@@ -1132,7 +1165,7 @@ export default function ChronoScreen() {
                       style={[styles.controlOverlay, styles.actionButtonOverlay, { opacity: pauseBackdropAnim }]}
                     />
                     <View style={styles.controlContent}>
-                      <Ionicons color={colors.text} name="play-skip-forward" size={24} />
+                      <Ionicons color={palette.text} name="play-skip-forward" size={24} />
                     </View>
                   </SquircleButton>
                 </Animated.View>
@@ -1223,7 +1256,6 @@ function clamp(value: number, min: number, max: number) {
 
 const styles = StyleSheet.create({
   screen: {
-    backgroundColor: "#F6F6F3",
     flex: 1,
     position: "relative",
   },
@@ -1251,8 +1283,6 @@ const styles = StyleSheet.create({
   },
   topSheetButton: {
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.72)",
-    borderColor: "#E5E5E5",
     borderRadius: 999,
     borderWidth: 1,
     height: 44,
@@ -1304,14 +1334,14 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   courseSubtitle: {
-    color: "#8D8D8D",
+    color: colors.textMuted,
     fontSize: 22,
     fontWeight: "600",
     letterSpacing: -0.4,
     textAlign: "center",
   },
   stepHeaderLabel: {
-    color: "#7C7C7C",
+    color: colors.textMuted,
     fontSize: 30,
     fontWeight: "500",
     letterSpacing: -0.8,
@@ -1363,22 +1393,22 @@ const styles = StyleSheet.create({
     gap: 0,
   },
   secondaryTime: {
-    color: "#676767",
+    color: colors.textMuted,
     fontSize: 26,
     fontWeight: "700",
     letterSpacing: -0.6,
   },
   secondaryHint: {
-    color: "#B7B7B7",
+    color: colors.textMuted,
     fontSize: 36,
     fontWeight: "700",
     letterSpacing: -0.8,
   },
   secondaryHintPaused: {
-    color: "#868686",
+    color: colors.textMuted,
   },
   elapsedLabel: {
-    color: "#A5A5A5",
+    color: colors.textMuted,
     fontSize: 14,
     fontWeight: "600",
     textAlign: "center",
@@ -1400,7 +1430,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   swipeHintText: {
-    color: "#8E8E8E",
+    color: colors.textMuted,
     fontSize: 13,
     fontWeight: "500",
     letterSpacing: -0.1,
@@ -1409,8 +1439,6 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     alignItems: "center",
-    backgroundColor: colors.surface,
-    borderColor: "#E6E6E6",
     borderRadius: radius.pill,
     borderWidth: 1,
     height: 64,

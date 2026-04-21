@@ -4,7 +4,7 @@ import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { ProgramDraftCalendar } from "../components/programs/ProgramDraftCalendar";
 import { getCourseForDay, getDayName, useProgramsStore } from "../features/programs";
-import { colors, spacing } from "../theme";
+import { colors, spacing, useThemePalette } from "../theme";
 import { ActionCardButton } from "../ui/ActionCardButton";
 import { CounterField } from "../ui/CounterField";
 import { SectionCard } from "../ui/SectionCard";
@@ -13,6 +13,7 @@ import { TextField } from "../ui/TextField";
 
 export default function ProgramCreateScreen() {
   const router = useRouter();
+  const palette = useThemePalette();
   const {
     programDraft,
     resetProgramDraft,
@@ -166,7 +167,12 @@ export default function ProgramCreateScreen() {
                             },
                           })
                         }
-                        style={styles.courseRow}
+                        style={[
+                          styles.courseRow,
+                          {
+                            backgroundColor: palette.surfaceMuted,
+                          },
+                        ]}
                       >
                         <Text style={styles.courseName}>{course.name}</Text>
                         <Text style={styles.courseMeta}>{getDayName(course.dayOfWeek)}</Text>
@@ -276,7 +282,6 @@ const styles = StyleSheet.create({
   },
   courseRow: {
     alignItems: "center",
-    backgroundColor: colors.surfaceMuted,
     borderRadius: 12,
     flexDirection: "row",
     justifyContent: "space-between",

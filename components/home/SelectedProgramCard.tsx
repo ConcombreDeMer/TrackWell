@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from "react-native";
 
 import { Program, getProgramCompletion, getProgramCourseCount } from "../../features/programs";
-import { colors, radius, spacing } from "../../theme";
+import { radius, spacing, useThemePalette } from "../../theme";
 import { SquircleButton } from "../../ui/Squircle";
 
 type SelectedProgramCardProps = {
@@ -10,28 +10,34 @@ type SelectedProgramCardProps = {
 };
 
 export function SelectedProgramCard({ program, onPress }: SelectedProgramCardProps) {
+  const palette = useThemePalette();
   const courseCount = getProgramCourseCount(program);
   const completion = getProgramCompletion(program);
 
   return (
-    <SquircleButton onPress={onPress} style={styles.card}>
-      <Text style={styles.title}>{program.name}</Text>
-      <Text numberOfLines={2} style={styles.description}>
+    <SquircleButton
+      onPress={onPress}
+      style={[styles.card, { backgroundColor: palette.primaryGradientStart }]}
+    >
+      <Text style={[styles.title, { color: palette.primaryForeground }]}>{program.name}</Text>
+      <Text numberOfLines={2} style={[styles.description, { color: palette.primaryForegroundMuted }]}>
         {program.description || "No description yet."}
       </Text>
 
       <View style={styles.stats}>
         <View style={styles.stat}>
-          <Text style={styles.statValue}>{program.numberOfWeeks}</Text>
-          <Text style={styles.statLabel}>Semaine</Text>
+          <Text style={[styles.statValue, { color: palette.primaryForeground }]}>
+            {program.numberOfWeeks}
+          </Text>
+          <Text style={[styles.statLabel, { color: palette.primaryForegroundMuted }]}>Semaine</Text>
         </View>
         <View style={styles.stat}>
-          <Text style={styles.statValue}>{courseCount}</Text>
-          <Text style={styles.statLabel}>Course</Text>
+          <Text style={[styles.statValue, { color: palette.primaryForeground }]}>{courseCount}</Text>
+          <Text style={[styles.statLabel, { color: palette.primaryForegroundMuted }]}>Course</Text>
         </View>
         <View style={styles.stat}>
-          <Text style={styles.statValue}>{completion}%</Text>
-          <Text style={styles.statLabel}>Completion</Text>
+          <Text style={[styles.statValue, { color: palette.primaryForeground }]}>{completion}%</Text>
+          <Text style={[styles.statLabel, { color: palette.primaryForegroundMuted }]}>Completion</Text>
         </View>
       </View>
     </SquircleButton>
@@ -40,18 +46,12 @@ export function SelectedProgramCard({ program, onPress }: SelectedProgramCardPro
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.primaryGradientStart,
     borderRadius: radius.lg,
     gap: spacing.md,
     padding: spacing.xl,
   },
-  title: {
-    color: colors.surface,
-    fontSize: 24,
-    fontWeight: "700",
-  },
+  title: { fontSize: 24, fontWeight: "700" },
   description: {
-    color: "rgba(255,255,255,0.72)",
     fontSize: 16,
     lineHeight: 24,
   },
@@ -63,14 +63,6 @@ const styles = StyleSheet.create({
   stat: {
     gap: 2,
   },
-  statValue: {
-    color: colors.surface,
-    fontSize: 30,
-    fontWeight: "700",
-  },
-  statLabel: {
-    color: "rgba(255,255,255,0.72)",
-    fontSize: 15,
-    fontWeight: "600",
-  },
+  statValue: { fontSize: 30, fontWeight: "700" },
+  statLabel: { fontSize: 15, fontWeight: "600" },
 });

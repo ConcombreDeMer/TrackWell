@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef } from "react";
 import { Animated, Easing, StyleSheet, Text, View } from "react-native";
 
-import { colors, radius, spacing } from "../theme";
+import { radius, spacing, useThemePalette } from "../theme";
 import { SquircleButton } from "./Squircle";
 
 type ActionCardButtonProps = {
@@ -20,6 +20,7 @@ export function ActionCardButton({
   onPress,
   variant = "light",
 }: ActionCardButtonProps) {
+  const palette = useThemePalette();
   const dark = variant === "dark";
   const muted = variant === "muted";
   const labelTranslate = useRef(new Animated.Value(0)).current;
@@ -87,12 +88,28 @@ export function ActionCardButton({
   return (
     <SquircleButton
       onPress={onPress}
-      style={[styles.base, dark ? styles.dark : muted ? styles.muted : styles.light]}
+      style={[
+        styles.base,
+        dark ? styles.dark : muted ? styles.muted : styles.light,
+        dark
+          ? { backgroundColor: palette.primaryGradientStart }
+          : muted
+            ? {
+                backgroundColor: palette.surfaceMuted,
+                borderColor: palette.border,
+              }
+            : {
+                borderColor: palette.text,
+              },
+      ]}
     >
       <Animated.Text
         style={[
           styles.label,
           dark ? styles.darkLabel : muted ? styles.mutedLabel : styles.lightLabel,
+          {
+            color: dark ? palette.primaryForeground : palette.text,
+          },
           {
             opacity: labelOpacity,
             transform: [{ translateY: labelTranslate }],
@@ -111,7 +128,7 @@ export function ActionCardButton({
         ]}
       >
         <Ionicons
-          color={dark ? colors.surface : colors.text}
+          color={dark ? palette.primaryForeground : palette.text}
           name={iconName}
           size={28}
         />
@@ -130,32 +147,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     width: "100%",
   },
-  dark: {
-    backgroundColor: colors.primaryGradientStart,
-  },
-  muted: {
-    backgroundColor: "#EBEBEB",
-    borderColor: "#D9D9D9",
-    borderWidth: 1,
-  },
+  dark: {},
+  muted: { borderWidth: 1 },
   light: {
     backgroundColor: "transparent",
-    borderColor: colors.text,
     borderWidth: 1,
   },
   label: {
     fontSize: 17,
     fontWeight: "500",
   },
-  darkLabel: {
-    color: colors.surface,
-  },
-  mutedLabel: {
-    color: colors.text,
-  },
-  lightLabel: {
-    color: colors.text,
-  },
+  darkLabel: {},
+  mutedLabel: {},
+  lightLabel: {},
   iconWrap: {
     alignItems: "center",
     justifyContent: "center",
