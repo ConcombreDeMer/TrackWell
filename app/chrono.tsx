@@ -22,6 +22,8 @@ import { BackButton } from "../components/navigation/BackButton";
 import { formatDurationFromSeconds, useProgramsStore } from "../features/programs";
 import {
   addWatchCommandListener,
+  buildWatchHistorySnapshot,
+  buildWatchProgramsSnapshot,
   publishWatchSession,
   WatchWorkoutSnapshot,
 } from "../features/watch-sync";
@@ -40,7 +42,13 @@ export default function ChronoScreen() {
     programId?: string;
     weekIndex?: string;
   }>();
-  const { getProgramById, saveCourseProgress, setCourseCompleted } = useProgramsStore();
+  const { getProgramById, programs, saveCourseProgress, selectedProgramId, setCourseCompleted } =
+    useProgramsStore();
+  const programsSnapshot = useMemo(
+    () => buildWatchProgramsSnapshot(programs, selectedProgramId),
+    [programs, selectedProgramId],
+  );
+  const historySnapshot = useMemo(() => buildWatchHistorySnapshot(programs), [programs]);
 
   const program = programId ? getProgramById(programId) : undefined;
   const parsedWeekIndex = Number(weekIndex);
@@ -483,16 +491,16 @@ export default function ChronoScreen() {
     }
 
     Alert.alert(
-      "Quitter la course ?",
-      "Tu es en train de quitter la course. Veux-tu vraiment quitter ou continuer sur le chronometre ?",
+      "Leave workout?",
+      "You are about to leave this workout. Do you want to leave or continue the timer?",
       [
         {
           style: "cancel",
-          text: "Continuer",
+          text: "Keep going",
         },
         {
           style: "destructive",
-          text: "Quitter la course",
+          text: "Leave workout",
           onPress: () => {
             allowNavigationRef.current = true;
             navigation.dispatch(data.action);
@@ -585,6 +593,8 @@ export default function ChronoScreen() {
         course.steps.reduce((total, step) => total + step.durationSeconds, 0),
       totalSteps: course.steps.length,
       weekIndex: week.index,
+      history: historySnapshot,
+      programs: programsSnapshot,
     };
   }, [
     activeStep,
@@ -598,7 +608,9 @@ export default function ChronoScreen() {
     isRunning,
     remainingSeconds,
     course,
+    historySnapshot,
     program,
+    programsSnapshot,
     week,
   ]);
 
@@ -847,16 +859,41 @@ export default function ChronoScreen() {
         case "resetWorkout":
           resetWorkoutState(true);
           break;
+        case "saveProgress":
+          if (program && week && course) {
+            saveCourseProgress(program.id, week.index, course.id, {
+              currentStepIndex,
+              remainingSeconds,
+              savedAt: new Date().toISOString(),
+            });
+            router.push({
+              pathname: "/end-course",
+              params: {
+                courseId: course.id,
+                partial: "true",
+                programId: program.id,
+                weekIndex: String(week.index),
+              },
+            });
+          }
+          break;
       }
     });
   }, [
     beginCountdownDirectly,
+    course,
+    currentStepIndex,
     handlePrimarySurfacePress,
     handleSkipStep,
     hasFinished,
     hasStarted,
     isCountdownActive,
+    program,
     resetWorkoutState,
+    remainingSeconds,
+    router,
+    saveCourseProgress,
+    week,
     course?.id,
   ]);
 

@@ -10,7 +10,27 @@ export type WatchCommandAction =
   | "startWorkout"
   | "togglePlayback"
   | "skipStep"
-  | "resetWorkout";
+  | "resetWorkout"
+  | "saveProgress";
+
+export type WatchProgramSummarySnapshot = {
+  id: string;
+  name: string;
+  completedCourses: number;
+  totalCourses: number;
+  isSelected: boolean;
+};
+
+export type WatchHistoryEntrySnapshot = {
+  id: string;
+  courseId: string;
+  courseName: string;
+  programId: string;
+  programName: string;
+  weekIndex: number;
+  status: "partial" | "done";
+  updatedAt?: string;
+};
 
 export type WatchWorkoutSnapshot = {
   countdownValue: number;
@@ -36,6 +56,8 @@ export type WatchWorkoutSnapshot = {
   totalDurationSeconds: number;
   totalSteps: number;
   weekIndex: number;
+  programs: WatchProgramSummarySnapshot[];
+  history: WatchHistoryEntrySnapshot[];
 };
 
 export type WatchCommand = {

@@ -6,15 +6,21 @@ import {
   getNextCourse,
   useProgramsStore,
 } from "../programs";
+import { buildWatchHistorySnapshot, buildWatchProgramsSnapshot } from "./watch-payload";
 import { addWatchCommandListener, publishWatchSession } from "./watch-sync";
 import { WatchWorkoutSnapshot } from "./types";
 
 export function WatchSyncBridge() {
   const router = useRouter();
   const pathname = usePathname();
-  const { getSelectedProgram } = useProgramsStore();
+  const { getSelectedProgram, programs, selectedProgramId } = useProgramsStore();
   const selectedProgram = getSelectedProgram();
   const nextCourse = selectedProgram ? getNextCourse(selectedProgram) : undefined;
+  const programsSnapshot = useMemo(
+    () => buildWatchProgramsSnapshot(programs, selectedProgramId),
+    [programs, selectedProgramId],
+  );
+  const historySnapshot = useMemo(() => buildWatchHistorySnapshot(programs), [programs]);
 
   const previewSnapshot = useMemo<WatchWorkoutSnapshot | null>(() => {
     if (!selectedProgram) {
@@ -38,6 +44,8 @@ export function WatchSyncBridge() {
         totalSteps: 0,
         updatedAt: new Date().toISOString(),
         weekIndex: 0,
+        history: historySnapshot,
+        programs: programsSnapshot,
       };
     }
 
@@ -62,6 +70,8 @@ export function WatchSyncBridge() {
         totalSteps: 0,
         updatedAt: new Date().toISOString(),
         weekIndex: 0,
+        history: historySnapshot,
+        programs: programsSnapshot,
       };
     }
 
@@ -92,8 +102,10 @@ export function WatchSyncBridge() {
       totalSteps: nextCourse.course.steps.length,
       updatedAt: new Date().toISOString(),
       weekIndex: nextCourse.weekIndex,
+      history: historySnapshot,
+      programs: programsSnapshot,
     };
-  }, [nextCourse, selectedProgram]);
+  }, [historySnapshot, nextCourse, programsSnapshot, selectedProgram]);
 
   useEffect(() => {
     if (pathname === "/chrono") {
