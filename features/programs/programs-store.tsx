@@ -4,8 +4,10 @@ import {
   loadProgramsStorageSnapshot,
   saveProgramsStorageSnapshot,
 } from "./local-storage";
+import { SharedProgram } from "./program-transfer";
 import { CourseFeedback, CourseProgress, CreateCourseInput, Program, ProgramDraft } from "./types";
 import {
+  createProgramFromImport,
   createCourse,
   createDraftFromProgram,
   createInitialProgramDraft,
@@ -26,6 +28,7 @@ type ProgramsStoreValue = {
   resetProgramDraft: () => void;
   startEditingProgram: (programId: string) => Program | undefined;
   saveProgramDraft: () => Program;
+  importProgram: (program: SharedProgram) => Program;
   deleteProgram: (programId: string) => void;
   selectProgram: (programId: string) => void;
   clearSelectedProgram: () => void;
@@ -331,6 +334,13 @@ export function ProgramsStoreProvider({ children }: PropsWithChildren) {
         });
 
         setProgramDraft(createInitialProgramDraft());
+        return nextProgram;
+      },
+      importProgram(importedProgram) {
+        const nextProgram = createProgramFromImport(importedProgram, programs);
+
+        setPrograms((current) => [nextProgram, ...current]);
+
         return nextProgram;
       },
       deleteProgram(programId) {

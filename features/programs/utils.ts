@@ -14,6 +14,23 @@ function createId(prefix: string) {
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
+type ImportedProgramShape = {
+  description: string;
+  name: string;
+  numberOfWeeks: number;
+  weeks: Array<{
+    courses: Array<{
+      dayOfWeek: DayOfWeek;
+      name: string;
+      steps: Array<{
+        durationSeconds: number;
+        type: StepType;
+      }>;
+    }>;
+    index: number;
+  }>;
+};
+
 export const weekDayLabels = ["L", "M", "M", "J", "V", "S", "D"] as const;
 export const weekDayNames = [
   "Monday",
@@ -78,6 +95,40 @@ export function createProgramFromDraft(draft: ProgramDraft): Program {
   };
 }
 
+export function createProgramFromImport(
+  importedProgram: ImportedProgramShape,
+  existingPrograms: Program[] = [],
+): Program {
+  const sortedWeeks = [...importedProgram.weeks].sort((first, second) => first.index - second.index);
+  const highestWeekIndex = sortedWeeks.reduce((highest, week) => Math.max(highest, week.index), 0);
+  const numberOfWeeks = Math.max(importedProgram.numberOfWeeks, highestWeekIndex || 1);
+
+  return {
+    id: createId("program"),
+    name: createImportedProgramName(importedProgram.name, existingPrograms),
+    description: importedProgram.description.trim(),
+    numberOfWeeks,
+    weeks: Array.from({ length: numberOfWeeks }, (_, weekOffset) => {
+      const weekIndex = weekOffset + 1;
+      const matchingWeek = sortedWeeks.find((week) => week.index === weekIndex);
+
+      return {
+        id: createId("week"),
+        index: weekIndex,
+        courses: (matchingWeek?.courses ?? [])
+          .map((course, courseIndex) => ({
+            completed: false,
+            dayOfWeek: course.dayOfWeek,
+            id: createId(`course-${weekIndex}-${course.dayOfWeek}`),
+            name: course.name.trim() || `Course ${courseIndex + 1}`,
+            steps: course.steps.map((step) => createStep(step.type, step.durationSeconds)),
+          }))
+          .sort((first, second) => first.dayOfWeek - second.dayOfWeek),
+      };
+    }),
+  };
+}
+
 export function createDraftFromProgram(program: Program): ProgramDraft {
   return {
     description: program.description,
@@ -92,6 +143,23 @@ export function createDraftFromProgram(program: Program): ProgramDraft {
       })),
     })),
   };
+}
+
+function createImportedProgramName(name: string, existingPrograms: Program[]) {
+  const baseName = name.trim() || "Imported Program";
+  const existingNames = new Set(existingPrograms.map((program) => program.name));
+
+  if (!existingNames.has(baseName)) {
+    return baseName;
+  }
+
+  let suffix = 2;
+
+  while (existingNames.has(`${baseName} (${suffix})`)) {
+    suffix += 1;
+  }
+
+  return `${baseName} (${suffix})`;
 }
 
 export function createCourse(input: CreateCourseInput): Course {

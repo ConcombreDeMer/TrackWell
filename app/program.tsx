@@ -1,5 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -13,6 +12,7 @@ import {
   getCourseForDay,
   getDayName,
   getProgramCourseCount,
+  shareProgramFile,
   useProgramsStore,
 } from "../features/programs";
 import { colors, radius, spacing, useThemePalette } from "../theme";
@@ -100,11 +100,26 @@ export default function ProgramScreen() {
 
   const isSelectedProgram = selectedProgramId === selectedProgram.id;
 
+  async function handleExportProgram() {
+    try {
+      await shareProgramFile(selectedProgram);
+    } catch (error) {
+      Alert.alert(
+        "Export unavailable",
+        error instanceof Error ? error.message : "TrackWell could not export this program.",
+      );
+    }
+  }
+
   return (
     <ScrollView contentContainerStyle={styles.content} style={styles.screen}>
       <View style={styles.topBar}>
         <BackButton />
-        <ProgramActionsMenu onDelete={handleDeleteProgram} onEdit={handleEditProgram} />
+        <ProgramActionsMenu
+          onDelete={handleDeleteProgram}
+          onEdit={handleEditProgram}
+          onExport={handleExportProgram}
+        />
       </View>
       <SectionCard>
         <Text style={styles.title}>{selectedProgram.name}</Text>

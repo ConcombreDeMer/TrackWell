@@ -32,6 +32,7 @@ export type {
 } from "./storage-schema";
 export {
   createDraftFromProgram,
+  createProgramFromImport,
   formatDurationFromSeconds,
   getChronologicalCourses,
   getCourseDurationSeconds,
@@ -44,3 +45,11 @@ export {
   getProgramCourseCount,
   weekDayLabels,
 } from "./utils";
+export {
+  createProgramTransferDocument,
+  exportProgramToFile,
+  parseProgramTransferDocument,
+  pickAndParseProgramImport,
+  shareProgramFile,
+} from "./program-transfer";
+export type { ProgramTransferDocument, SharedProgram } from "./program-transfer";

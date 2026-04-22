@@ -2,7 +2,7 @@ import { useRouter } from "expo-router";
 import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { ProgramSummaryCard } from "../../components/programs/ProgramSummaryCard";
-import { useProgramsStore } from "../../features/programs";
+import { pickAndParseProgramImport, useProgramsStore } from "../../features/programs";
 import { colors, spacing, useThemePalette } from "../../theme";
 import { ActionCardButton } from "../../ui/ActionCardButton";
 import { SquircleView } from "../../ui/Squircle";
@@ -10,7 +10,35 @@ import { SquircleView } from "../../ui/Squircle";
 export default function ProgramsScreen() {
   const router = useRouter();
   const palette = useThemePalette();
-  const { clearSelectedProgram, programs, resetProgramDraft, selectedProgramId } = useProgramsStore();
+  const {
+    clearSelectedProgram,
+    importProgram,
+    programs,
+    resetProgramDraft,
+    selectedProgramId,
+  } = useProgramsStore();
+
+  async function handleImportProgram() {
+    try {
+      const transferDocument = await pickAndParseProgramImport();
+
+      if (!transferDocument) {
+        return;
+      }
+
+      const nextProgram = importProgram(transferDocument.program);
+
+      Alert.alert(
+        "Program imported",
+        `"${nextProgram.name}" has been added to your programs.`,
+      );
+    } catch (error) {
+      Alert.alert(
+        "Import failed",
+        error instanceof Error ? error.message : "TrackWell could not import this program.",
+      );
+    }
+  }
 
   return (
     <ScrollView contentContainerStyle={styles.content} style={styles.screen}>
@@ -26,7 +54,13 @@ export default function ProgramsScreen() {
           }}
           variant="dark"
         />
-        <ActionCardButton iconName="document-text-outline" label="Import program" />
+        <ActionCardButton
+          iconName="document-text-outline"
+          label="Import program"
+          onPress={() => {
+            void handleImportProgram();
+          }}
+        />
       </View>
 
       <View style={styles.list}>

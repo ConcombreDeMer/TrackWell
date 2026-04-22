@@ -7,9 +7,10 @@ import { SquircleButton } from "../../ui/Squircle";
 type ProgramActionsMenuProps = {
   onDelete: () => void;
   onEdit: () => void;
+  onExport: () => void;
 };
 
-export function ProgramActionsMenu({ onDelete, onEdit }: ProgramActionsMenuProps) {
+export function ProgramActionsMenu({ onDelete, onEdit, onExport }: ProgramActionsMenuProps) {
   const palette = useThemePalette();
   const swiftUIMenu = getSwiftUIMenu();
   const userInterfaceStyle = palette.statusBarStyle === "light" ? "dark" : "light";
@@ -37,6 +38,9 @@ export function ProgramActionsMenu({ onDelete, onEdit }: ProgramActionsMenuProps
             <Button onPress={onEdit} systemImage="pencil">
               Edit Program
             </Button>
+            <Button onPress={onExport} systemImage="square.and.arrow.up">
+              Export Program
+            </Button>
             <Button onPress={onDelete} role="destructive" systemImage="trash">
               Delete Program
             </Button>
@@ -50,15 +54,17 @@ export function ProgramActionsMenu({ onDelete, onEdit }: ProgramActionsMenuProps
     if (Platform.OS === "ios") {
       ActionSheetIOS.showActionSheetWithOptions(
         {
-          cancelButtonIndex: 2,
-          destructiveButtonIndex: 1,
-          options: ["Edit Program", "Delete Program", "Cancel"],
+          cancelButtonIndex: 3,
+          destructiveButtonIndex: 2,
+          options: ["Edit Program", "Export Program", "Delete Program", "Cancel"],
           userInterfaceStyle,
         },
         (buttonIndex) => {
           if (buttonIndex === 0) {
             onEdit();
           } else if (buttonIndex === 1) {
+            onExport();
+          } else if (buttonIndex === 2) {
             onDelete();
           }
         },
@@ -69,6 +75,7 @@ export function ProgramActionsMenu({ onDelete, onEdit }: ProgramActionsMenuProps
 
     Alert.alert("Program actions", "Choose an action", [
       { text: "Edit Program", onPress: onEdit },
+      { text: "Export Program", onPress: onExport },
       { style: "destructive", text: "Delete Program", onPress: onDelete },
       { style: "cancel", text: "Cancel" },
     ]);

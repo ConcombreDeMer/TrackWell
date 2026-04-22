@@ -1403,6 +1403,7 @@ const styles = StyleSheet.create({
     fontSize: 36,
     fontWeight: "700",
     letterSpacing: -0.8,
+    opacity: 0.5,
   },
   secondaryHintPaused: {
     color: colors.textMuted,

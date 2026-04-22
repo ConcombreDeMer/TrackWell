@@ -22,15 +22,15 @@ export default function TabsLayout() {
         pushed from the root stack so the navigation intent stays explicit.
       */}
       <NativeTabs.Trigger name="index">
-        <Label>Home</Label>
+        <Label hidden>Home</Label>
         <Icon sf={{ default: "house", selected: "house.fill" }} />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="programs">
-        <Label>Programs</Label>
+        <Label hidden>Programs</Label>
         <Icon sf={{ default: "list.bullet.rectangle", selected: "list.bullet.rectangle.fill" }} />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="history">
-        <Label>History</Label>
+        <Label hidden>History</Label>
         <Icon sf={{ default: "clock", selected: "clock.fill" }} />
       </NativeTabs.Trigger>
       {/* <NativeTabs.Trigger name="profile">
