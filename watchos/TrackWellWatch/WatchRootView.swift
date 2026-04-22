@@ -4,6 +4,7 @@ private enum WatchRoute: Hashable {
   case chrono
   case programs
   case history
+  case settings
   case raceDetail
 }
 
@@ -32,6 +33,8 @@ struct WatchRootView: View {
             WatchProgramsView()
           case .history:
             WatchHistoryView()
+          case .settings:
+            WatchSettingsView()
           case .raceDetail:
             WatchRaceDetailView()
           }
@@ -41,20 +44,24 @@ struct WatchRootView: View {
 }
 
 private struct WatchHomeView: View {
+  @EnvironmentObject private var themeSettings: WatchThemeSettings
+
   var body: some View {
+    let palette = themeSettings.palette
+
     ZStack {
-      Color.black
+      palette.background
         .ignoresSafeArea()
 
       VStack(alignment: .leading, spacing: 12) {
         VStack(alignment: .leading, spacing: 2) {
           Text("Programme selectionne")
             .font(.system(size: 9, weight: .regular))
-            .foregroundStyle(.white.opacity(0.65))
+            .foregroundStyle(palette.secondaryText)
 
           Text("Marathon")
             .font(.system(size: 16, weight: .bold))
-            .foregroundStyle(.white)
+            .foregroundStyle(palette.primaryText)
         }
         .padding(.horizontal, 4)
 
@@ -68,17 +75,22 @@ private struct WatchHomeView: View {
         }
         .buttonStyle(.plain)
 
+        NavigationLink(value: WatchRoute.settings) {
+          WatchHomeActionCard(title: "Settings")
+        }
+        .buttonStyle(.plain)
+
         Spacer(minLength: 0)
 
         NavigationLink(value: WatchRoute.chrono) {
           HStack(spacing: 10) {
             Image(systemName: "figure.run")
               .font(.system(size: 20, weight: .semibold))
-              .foregroundStyle(.black)
+              .foregroundStyle(palette.buttonForeground)
 
             Text("Next race")
               .font(.system(size: 15, weight: .bold))
-              .foregroundStyle(.black)
+              .foregroundStyle(palette.buttonForeground)
               .lineLimit(1)
               .minimumScaleFactor(0.9)
 
@@ -87,7 +99,7 @@ private struct WatchHomeView: View {
           .padding(.horizontal, 16)
           .frame(maxWidth: .infinity)
           .frame(height: 48)
-          .background(Color.white)
+          .background(palette.buttonBackground)
           .clipShape(Capsule())
         }
         .buttonStyle(.plain)
@@ -101,30 +113,38 @@ private struct WatchHomeView: View {
 }
 
 private struct WatchHomeActionCard: View {
+  @EnvironmentObject private var themeSettings: WatchThemeSettings
+
   let title: String
 
   var body: some View {
+    let palette = themeSettings.palette
+
     HStack {
       Text(title)
         .font(.system(size: 14, weight: .regular))
-        .foregroundStyle(.white)
+        .foregroundStyle(palette.primaryText)
 
       Spacer(minLength: 0)
     }
     .padding(.horizontal, 14)
     .frame(maxWidth: .infinity)
     .frame(height: 42)
-    .background(Color.white.opacity(0.22))
+    .background(palette.cardBackground)
     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
   }
 }
 
 private struct WatchPlaceholderScreen: View {
+  @EnvironmentObject private var themeSettings: WatchThemeSettings
+
   let title: String
 
   var body: some View {
+    let palette = themeSettings.palette
+
     ZStack {
-      Color.black
+      palette.background
         .ignoresSafeArea()
     }
     .navigationTitle(title)
@@ -185,8 +205,56 @@ private struct WatchRaceDetailView: View {
   }
 }
 
+private struct WatchSettingsView: View {
+  @EnvironmentObject private var themeSettings: WatchThemeSettings
+
+  private var darkModeBinding: Binding<Bool> {
+    Binding(
+      get: { themeSettings.mode == .dark },
+      set: { themeSettings.mode = $0 ? .dark : .light }
+    )
+  }
+
+  var body: some View {
+    let palette = themeSettings.palette
+
+    WatchScreenShell(title: "Settings") {
+      VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 2) {
+          Text("Appearance")
+            .font(.system(size: 16, weight: .semibold))
+            .foregroundStyle(palette.primaryText)
+
+          Text("Choisissez le theme de la montre.")
+            .font(.system(size: 11, weight: .regular))
+            .foregroundStyle(palette.secondaryText)
+        }
+
+        Toggle(isOn: darkModeBinding) {
+          VStack(alignment: .leading, spacing: 2) {
+            Text("Dark mode")
+              .font(.system(size: 14, weight: .semibold))
+              .foregroundStyle(palette.primaryText)
+
+            Text(themeSettings.mode == .dark ? "Active" : "Inactive")
+              .font(.system(size: 10, weight: .regular))
+              .foregroundStyle(palette.secondaryText)
+          }
+        }
+        .toggleStyle(.switch)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(palette.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+      }
+      .frame(maxWidth: .infinity, alignment: .topLeading)
+    }
+  }
+}
+
 private struct WatchScreenShell<Content: View>: View {
   @Environment(\.dismiss) private var dismiss
+  @EnvironmentObject private var themeSettings: WatchThemeSettings
 
   let title: String
   let content: Content
@@ -197,8 +265,10 @@ private struct WatchScreenShell<Content: View>: View {
   }
 
   var body: some View {
+    let palette = themeSettings.palette
+
     ZStack {
-      Color.black
+      palette.background
         .ignoresSafeArea()
 
       ScrollView(.vertical, showsIndicators: false) {
@@ -209,16 +279,16 @@ private struct WatchScreenShell<Content: View>: View {
             } label: {
               Image(systemName: "arrow.left")
                 .font(.system(size: 15, weight: .bold))
-                .foregroundStyle(.black)
+                .foregroundStyle(palette.buttonForeground)
                 .frame(width: 34, height: 34)
-                .background(Color.white)
+                .background(palette.buttonBackground)
                 .clipShape(Circle())
             }
             .buttonStyle(.plain)
 
             Text(title)
               .font(.system(size: 20, weight: .bold))
-              .foregroundStyle(.white)
+              .foregroundStyle(palette.primaryText)
               .lineLimit(1)
               .minimumScaleFactor(0.85)
 
@@ -237,19 +307,23 @@ private struct WatchScreenShell<Content: View>: View {
 }
 
 private struct WatchProgramCard: View {
+  @EnvironmentObject private var themeSettings: WatchThemeSettings
+
   let program: WatchProgram
 
   var body: some View {
+    let palette = themeSettings.palette
+
     HStack(spacing: 10) {
       VStack(alignment: .leading, spacing: 2) {
         Text(program.name)
           .font(.system(size: 16, weight: .medium))
-          .foregroundStyle(.white)
+          .foregroundStyle(palette.primaryText)
           .lineLimit(2)
 
         Text(program.progressLabel)
           .font(.system(size: 10, weight: .regular))
-          .foregroundStyle(.white.opacity(0.55))
+          .foregroundStyle(palette.secondaryText)
       }
 
       Spacer(minLength: 0)
@@ -260,25 +334,29 @@ private struct WatchProgramCard: View {
     }
     .padding(.horizontal, 14)
     .frame(maxWidth: .infinity, minHeight: 62, alignment: .leading)
-    .background(Color.white.opacity(0.26))
+    .background(palette.cardBackground)
     .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
   }
 }
 
 private struct WatchHistoryCard: View {
+  @EnvironmentObject private var themeSettings: WatchThemeSettings
+
   let item: WatchHistoryItem
 
   var body: some View {
+    let palette = themeSettings.palette
+
     HStack(spacing: 10) {
       VStack(alignment: .leading, spacing: 2) {
         Text(item.title)
           .font(.system(size: 16, weight: .medium))
-          .foregroundStyle(.white)
+          .foregroundStyle(palette.primaryText)
           .lineLimit(1)
 
         Text(item.subtitle)
           .font(.system(size: 10, weight: .regular))
-          .foregroundStyle(.white.opacity(0.55))
+          .foregroundStyle(palette.secondaryText)
           .lineLimit(1)
       }
 
@@ -288,26 +366,34 @@ private struct WatchHistoryCard: View {
     }
     .padding(.horizontal, 14)
     .frame(maxWidth: .infinity, minHeight: 62, alignment: .leading)
-    .background(Color.white.opacity(0.26))
+    .background(palette.cardBackground)
     .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
   }
 }
 
 private struct WatchIconBadge: View {
+  @EnvironmentObject private var themeSettings: WatchThemeSettings
+
   let systemName: String
 
   var body: some View {
+    let palette = themeSettings.palette
+
     Image(systemName: systemName)
       .font(.system(size: 18, weight: .semibold))
-      .foregroundStyle(.white)
+      .foregroundStyle(palette.primaryText)
       .frame(width: 44, height: 44)
-      .background(Color.white.opacity(0.2))
+      .background(palette.badgeBackground)
       .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
   }
 }
 
 private struct WatchEllipsisBadge: View {
+  @EnvironmentObject private var themeSettings: WatchThemeSettings
+
   var body: some View {
+    let palette = themeSettings.palette
+
     HStack(spacing: 4) {
       Circle()
         .frame(width: 5, height: 5)
@@ -316,9 +402,9 @@ private struct WatchEllipsisBadge: View {
       Circle()
         .frame(width: 5, height: 5)
     }
-    .foregroundStyle(.white)
+    .foregroundStyle(palette.primaryText)
     .frame(width: 44, height: 44)
-    .background(Color.white.opacity(0.2))
+    .background(palette.badgeBackground)
     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
   }
 }

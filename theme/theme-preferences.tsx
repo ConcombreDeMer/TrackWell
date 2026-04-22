@@ -119,6 +119,6 @@ export function useThemePreferences() {
 }
 
 export function useThemePalette() {
-  const { themeMode } = useThemePreferences();
-  return getColorsForTheme(themeMode);
+  const context = useContext(ThemePreferencesContext);
+  return getColorsForTheme(context?.themeMode ?? "light");
 }
