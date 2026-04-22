@@ -1,7 +1,17 @@
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import {
+  Alert,
+  LayoutAnimation,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  UIManager,
+  View,
+} from "react-native";
 
 import { BackButton } from "../components/navigation/BackButton";
 import { ProgramDraftCalendar } from "../components/programs/ProgramDraftCalendar";
@@ -23,7 +33,6 @@ import { SquircleButton, SquircleView } from "../ui/Squircle";
 export default function ProgramScreen() {
   const router = useRouter();
   const palette = useThemePalette();
-  const [showCompleted, setShowCompleted] = useState(false);
   const { programId } = useLocalSearchParams<{ programId?: string }>();
   const {
     clearSelectedProgram,
@@ -34,6 +43,13 @@ export default function ProgramScreen() {
     startEditingProgram,
   } = useProgramsStore();
   const program = programId ? getProgramById(programId) : undefined;
+  const [collapsedWeekIds, setCollapsedWeekIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
+      UIManager.setLayoutAnimationEnabledExperimental(true);
+    }
+  }, []);
 
   if (!program) {
     return (
@@ -111,6 +127,23 @@ export default function ProgramScreen() {
     }
   }
 
+  function expandAllWeeks() {
+    LayoutAnimation.configureNext(expandCollapseAnimation);
+    setCollapsedWeekIds([]);
+  }
+
+  function collapseAllWeeks() {
+    LayoutAnimation.configureNext(expandCollapseAnimation);
+    setCollapsedWeekIds(selectedProgram.weeks.map((week) => week.id));
+  }
+
+  function toggleWeek(weekId: string) {
+    LayoutAnimation.configureNext(expandCollapseAnimation);
+    setCollapsedWeekIds((current) =>
+      current.includes(weekId) ? current.filter((id) => id !== weekId) : [...current, weekId],
+    );
+  }
+
   return (
     <ScrollView contentContainerStyle={styles.content} style={styles.screen}>
       <View style={styles.topBar}>
@@ -139,126 +172,159 @@ export default function ProgramScreen() {
           variant={isSelectedProgram ? "dark" : "muted"}
         />
       </View>
+      <View style={styles.blockSection}>
+        <Text style={styles.blockTitle}>Calendar</Text>
+        <ProgramDraftCalendar
+          draft={selectedProgram}
+          onSelectCell={(weekIndex, dayOfWeek) => {
+            const selectedWeek = selectedProgram.weeks.find((week) => week.index === weekIndex);
+            const existingCourse = selectedWeek ? getCourseForDay(selectedWeek, dayOfWeek) : undefined;
 
-      <ProgramDraftCalendar
-        draft={selectedProgram}
-        showCompleted={showCompleted}
-        onSelectCell={(weekIndex, dayOfWeek) => {
-          const selectedWeek = selectedProgram.weeks.find((week) => week.index === weekIndex);
-          const existingCourse = selectedWeek ? getCourseForDay(selectedWeek, dayOfWeek) : undefined;
+            if (!existingCourse) {
+              return;
+            }
 
-          if (!existingCourse) {
-            return;
-          }
+            router.push({
+              pathname: "/course",
+              params: {
+                programId: selectedProgram.id,
+                weekIndex: String(weekIndex),
+                courseId: existingCourse.id,
+              },
+            });
+          }}
+        />
+      </View>
 
-          router.push({
-            pathname: "/course",
-            params: {
-              programId: selectedProgram.id,
-              weekIndex: String(weekIndex),
-              courseId: existingCourse.id,
-            },
-          });
-        }}
-        titleSlot={
-          <Pressable
-            onPress={() => setShowCompleted((current) => !current)}
-            style={styles.checkboxRow}
-          >
-            <Text style={styles.checkboxLabel}>Completed</Text>
-            <SquircleView
+      <View style={styles.blockSection}>
+        <View style={styles.blockHeader}>
+          <Text style={styles.blockTitle}>Training Plan</Text>
+          <View style={styles.blockActions}>
+            <Pressable
+              onPress={expandAllWeeks}
               style={[
-                styles.checkbox,
+                styles.compactToggleButton,
                 {
-                  backgroundColor: showCompleted ? palette.success : palette.surface,
-                  borderColor: showCompleted ? palette.success : palette.border,
+                  backgroundColor: palette.surface,
+                  borderColor: palette.border,
+                  opacity: 0.8,
                 },
               ]}
             >
-              {showCompleted ? (
-                <Ionicons color={palette.text} name="checkmark" size={18} />
-              ) : null}
-            </SquircleView>
-          </Pressable>
-        }
-      />
-
-      {selectedProgram.weeks.map((week) => (
-        <SectionCard key={week.id}>
-          <View style={styles.weekHeader}>
-            <View style={styles.weekHeaderText}>
-              <Text style={styles.weekTitle}>Week {week.index}</Text>
-              <Text style={styles.weekSubtitle}>
-                {week.courses.length === 0
-                  ? "No courses yet"
-                  : `${week.courses.length} course${week.courses.length > 1 ? "s" : ""}`}
-              </Text>
-            </View>
-          </View>
-
-          {week.courses.length === 0 ? (
-            <SquircleView
+              <View style={styles.compactToggleIconStack}>
+                <Ionicons color={palette.text} name="chevron-up" size={10} />
+                <Ionicons color={palette.text} name="chevron-down" size={10} />
+              </View>
+            </Pressable>
+            <Pressable
+              onPress={collapseAllWeeks}
               style={[
-                styles.emptyCourseState,
-                { backgroundColor: palette.surfaceMuted },
+                styles.compactToggleButton,
+                {
+                  backgroundColor: palette.surface,
+                  borderColor: palette.border,
+                  opacity: 0.8,
+                },
               ]}
             >
-              <Text style={styles.emptyCourseText}>
-                Add the first course for this week to start building the plan.
-              </Text>
-            </SquircleView>
-          ) : (
-            <View style={styles.courseList}>
-              {week.courses.map((course, index) => {
-                const isPartialCourse = !course.completed && (!!course.feedback || !!course.progress);
-
-                return (
-                <SquircleButton
-                  key={course.id}
-                  onPress={() =>
-                    router.push({
-                        pathname: "/course",
-                        params: {
-                          programId: selectedProgram.id,
-                          weekIndex: String(week.index),
-                          courseId: course.id,
-                        },
-                    })
-                  }
-                  style={[
-                    styles.courseCard,
-                    { backgroundColor: palette.surfaceMuted },
-                  ]}
-                >
-                  <View style={styles.courseBody}>
-                    <Text style={styles.courseTitle}>{course.name || `Course ${index + 1}`}</Text>
-                    <Text style={styles.courseMeta}>
-                      {getDayName(course.dayOfWeek)} • {course.steps.length} steps •{" "}
-                      {formatDurationFromSeconds(getCourseDurationSeconds(course))}
-                    </Text>
+              <View style={styles.compactToggleIconStack}>
+                <Ionicons color={palette.text} name="chevron-down" size={10} />
+                <Ionicons color={palette.text} name="chevron-up" size={10} />
+              </View>
+            </Pressable>
+          </View>
+        </View>
+        <SectionCard>
+          <View style={styles.weekList}>
+            {selectedProgram.weeks.map((week, weekIndex) => (
+              <Pressable
+                key={week.id}
+                onPress={() => toggleWeek(week.id)}
+                style={[
+                  styles.weekSection,
+                  weekIndex > 0 && styles.weekSectionDivider,
+                  weekIndex > 0 && { borderTopColor: withAlpha(palette.text, 0.18) },
+                ]}
+              >
+                <View style={styles.weekHeader}>
+                  <View style={styles.weekHeaderRow}>
+                    <Text style={styles.sectionTitle}>Week {week.index}</Text>
+                    {week.courses.length > 0 ? (
+                      <Text style={styles.sectionSubtitle}>
+                        {`${week.courses.length} course${week.courses.length > 1 ? "s" : ""}`}
+                      </Text>
+                    ) : null}
                   </View>
-                  {course.completed ? (
-                    <Ionicons
-                      color={colors.success}
-                      name="checkmark-circle"
-                      size={24}
-                      style={styles.courseCompletedIcon}
-                    />
-                  ) : isPartialCourse ? (
-                    <MaterialCommunityIcons
-                      color={palette.warningText}
-                      name="waves"
-                      size={24}
-                      style={styles.courseCompletedIcon}
-                    />
-                  ) : null}
-                </SquircleButton>
-                );
-              })}
-            </View>
-          )}
+                </View>
+
+                {!collapsedWeekIds.includes(week.id) ? (
+                  week.courses.length === 0 ? (
+                    <SquircleView
+                      style={[
+                        styles.emptyCourseState,
+                        { backgroundColor: palette.surfaceMuted },
+                      ]}
+                    >
+                      <Text style={styles.emptyCourseText}>
+                        No course planned for this week yet.
+                      </Text>
+                    </SquircleView>
+                  ) : (
+                    <View style={styles.courseList}>
+                      {week.courses.map((course, index) => {
+                        const isPartialCourse = !course.completed && (!!course.feedback || !!course.progress);
+
+                        return (
+                          <SquircleButton
+                            key={course.id}
+                            onPress={() =>
+                              router.push({
+                                pathname: "/course",
+                                params: {
+                                  programId: selectedProgram.id,
+                                  weekIndex: String(week.index),
+                                  courseId: course.id,
+                                },
+                              })
+                            }
+                            style={[
+                              styles.courseCard,
+                              { backgroundColor: palette.surfaceMuted },
+                            ]}
+                          >
+                            <View style={styles.courseBody}>
+                              <Text style={styles.courseTitle}>{course.name || `Course ${index + 1}`}</Text>
+                              <Text style={styles.courseMeta}>
+                                {getDayName(course.dayOfWeek)} • {course.steps.length} steps •{" "}
+                                {formatDurationFromSeconds(getCourseDurationSeconds(course))}
+                              </Text>
+                            </View>
+                            {course.completed ? (
+                              <Ionicons
+                                color={colors.success}
+                                name="checkmark-circle"
+                                size={24}
+                                style={styles.courseCompletedIcon}
+                              />
+                            ) : isPartialCourse ? (
+                              <MaterialCommunityIcons
+                                color={colors.warningText}
+                                name="waves"
+                                size={24}
+                                style={styles.courseCompletedIcon}
+                              />
+                            ) : null}
+                          </SquircleButton>
+                        );
+                      })}
+                    </View>
+                  )
+                ) : null}
+              </Pressable>
+            ))}
+          </View>
         </SectionCard>
-      ))}
+      </View>
     </ScrollView>
   );
 }
@@ -272,6 +338,37 @@ function SummaryStat({ label, value }: { label: string; value: string }) {
   );
 }
 
+function withAlpha(hex: string, alpha: number) {
+  const sanitized = hex.replace("#", "");
+
+  if (sanitized.length !== 6) {
+    return hex;
+  }
+
+  const red = Number.parseInt(sanitized.slice(0, 2), 16);
+  const green = Number.parseInt(sanitized.slice(2, 4), 16);
+  const blue = Number.parseInt(sanitized.slice(4, 6), 16);
+
+  return `rgba(${red}, ${green}, ${blue}, ${Math.min(Math.max(alpha, 0), 1)})`;
+}
+
+const expandCollapseAnimation = {
+  duration: 320,
+  create: {
+    duration: 260,
+    property: LayoutAnimation.Properties.opacity,
+    type: LayoutAnimation.Types.easeInEaseOut,
+  },
+  delete: {
+    duration: 220,
+    property: LayoutAnimation.Properties.opacity,
+    type: LayoutAnimation.Types.easeInEaseOut,
+  },
+  update: {
+    type: LayoutAnimation.Types.easeInEaseOut,
+  },
+};
+
 const styles = StyleSheet.create({
   screen: {
     backgroundColor: colors.background,
@@ -279,7 +376,7 @@ const styles = StyleSheet.create({
     marginTop: 60,
   },
   content: {
-    gap: spacing.lg,
+    gap: spacing.xl,
     padding: spacing.xl,
     paddingBottom: 48,
   },
@@ -318,39 +415,61 @@ const styles = StyleSheet.create({
   actions: {
     gap: spacing.sm,
   },
-  checkboxRow: {
+  blockSection: {
+    gap: spacing.xs,
+  },
+  blockHeader: {
     alignItems: "center",
     flexDirection: "row",
-    gap: spacing.sm,
+    justifyContent: "space-between",
   },
-  checkboxLabel: {
+  blockTitle: {
     color: colors.text,
-    fontSize: 14,
-    fontWeight: "500",
+    fontSize: 22,
+    fontWeight: "800",
   },
-  checkbox: {
+  blockActions: {
+    flexDirection: "row",
+    gap: spacing.xs,
+  },
+  compactToggleButton: {
     alignItems: "center",
-    borderRadius: 10,
+    borderRadius: radius.pill,
     borderWidth: 1,
     height: 36,
     justifyContent: "center",
     width: 36,
   },
-  checkboxActive: {},
+  compactToggleIconStack: {
+    gap: 0,
+    marginVertical: -3,
+  },
+  weekList: {
+    gap: spacing.lg,
+  },
+  weekSection: {
+    gap: spacing.md,
+  },
+  weekSectionDivider: {
+    borderTopWidth: 1,
+    paddingTop: spacing.lg,
+  },
   weekHeader: {
     gap: spacing.md,
   },
-  weekHeaderText: {
-    gap: 2,
+  weekHeaderRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
-  weekTitle: {
+  sectionTitle: {
     color: colors.text,
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: "700",
   },
-  weekSubtitle: {
+  sectionSubtitle: {
     color: colors.textMuted,
-    fontSize: 15,
+    fontSize: 14,
   },
   emptyCourseState: {
     borderRadius: radius.md,
