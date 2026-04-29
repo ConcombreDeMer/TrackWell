@@ -1,4 +1,5 @@
 export type StepType = string;
+export type StepTargetUnit = "duration" | "repetitions" | "kilometers";
 export type DayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 export type DifficultyLevel = "easy" | "medium" | "hard" | "extra-hard";
 export type PainLevel = "none" | "medium" | "high" | "very-high";
@@ -20,6 +21,12 @@ export interface Step {
   id: string;
   type: StepType;
   durationSeconds: number;
+  target?: StepTarget;
+}
+
+export interface StepTarget {
+  unit: StepTargetUnit;
+  value: number;
 }
 
 export interface Course {
@@ -66,5 +73,6 @@ export type CreateCourseInput = {
   steps: Array<{
     type: StepType;
     durationSeconds: number;
+    target?: StepTarget;
   }>;
 };

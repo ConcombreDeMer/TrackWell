@@ -1,4 +1,4 @@
-import { DayOfWeek, Program, StepType } from "./types";
+import { DayOfWeek, Program, StepTarget, StepType } from "./types";
 
 const PROGRAM_EXPORT_MIME_TYPE = "application/json";
 const PROGRAM_EXPORT_UTI = "public.json";
@@ -6,6 +6,7 @@ const PROGRAM_TRANSFER_VERSION = 1;
 
 type SharedProgramStep = {
   durationSeconds: number;
+  target?: StepTarget;
   type: StepType;
 };
 
@@ -129,6 +130,7 @@ export function createProgramTransferDocument(program: Program): ProgramTransfer
               name: course.name,
               steps: course.steps.map((step) => ({
                 durationSeconds: step.durationSeconds,
+                target: step.target,
                 type: step.type,
               })),
             }))
@@ -224,7 +226,21 @@ function isSharedProgramStep(value: unknown): value is SharedProgramStep {
     typeof value.type === "string" &&
     typeof value.durationSeconds === "number" &&
     Number.isFinite(value.durationSeconds) &&
-    value.durationSeconds > 0
+    value.durationSeconds > 0 &&
+    (value.target === undefined || isStepTarget(value.target))
+  );
+}
+
+function isStepTarget(value: unknown): value is StepTarget {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    (value.unit === "duration" || value.unit === "repetitions" || value.unit === "kilometers") &&
+    typeof value.value === "number" &&
+    Number.isFinite(value.value) &&
+    value.value > 0
   );
 }
 

@@ -13,6 +13,8 @@ export type {
   Program,
   ProgramDraft,
   Step,
+  StepTarget,
+  StepTargetUnit,
   StepType,
   Week,
 } from "./types";

@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Host, Slider } from "@expo/ui/swift-ui";
+import { Button, ContextMenu, Host, Slider } from "@expo/ui/swift-ui";
 import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
@@ -25,13 +25,21 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { addExerciseSelectionListener, getExerciseById } from "../features/exercises";
-import { DayOfWeek, StepType, getDayName, useProgramsStore } from "../features/programs";
+import {
+  DayOfWeek,
+  StepTarget,
+  StepTargetUnit,
+  StepType,
+  getDayName,
+  useProgramsStore,
+} from "../features/programs";
 import { colors, radius, spacing, useThemePalette } from "../theme";
 import { SquircleButton, SquircleView } from "../ui/Squircle";
 
 type DraftStep = {
   durationSeconds: number;
   id: string;
+  target: StepTarget;
   type: StepType;
 };
 
@@ -72,9 +80,49 @@ const DURATION_SLIDER_PRESET_SECONDS = [
   60 * 60,
   2 * 60 * 60,
 ] as const;
-const DURATION_SLIDER_MAX_SECONDS =
-  DURATION_SLIDER_PRESET_SECONDS[DURATION_SLIDER_PRESET_SECONDS.length - 1];
-const DURATION_SLIDER_CUSTOM_INDEX = DURATION_SLIDER_PRESET_SECONDS.length;
+const REPETITION_SLIDER_PRESET_VALUES = [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  8,
+  10,
+  12,
+  15,
+  20,
+  25,
+  30,
+  40,
+  50,
+  75,
+  100,
+] as const;
+const KILOMETER_SLIDER_PRESET_VALUES = [
+  0.1,
+  0.2,
+  0.4,
+  0.5,
+  0.75,
+  1,
+  1.5,
+  2,
+  3,
+  4,
+  5,
+  7.5,
+  10,
+  15,
+  20,
+  30,
+  42.2,
+] as const;
+const TARGET_UNIT_OPTIONS = [
+  { label: "duration", systemImage: "timer", unit: "duration" },
+  { label: "repetitions", systemImage: "number", unit: "repetitions" },
+  { label: "kilometers", systemImage: "figure.run", unit: "kilometers" },
+] as const;
 
 if (UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -215,6 +263,7 @@ export default function CourseCreateScreen() {
       steps: flattenBuilderItems(items).map((step) => ({
         type: step.type,
         durationSeconds: step.durationSeconds,
+        target: step.target,
       })),
     };
 
@@ -322,7 +371,7 @@ export default function CourseCreateScreen() {
     });
   }
 
-  function handleStepDurationChange(itemId: string, durationSeconds: number) {
+  function handleStepTargetChange(itemId: string, target: StepTarget) {
     setItems((current) =>
       current.map((item) =>
         item.id === itemId && item.kind === "step"
@@ -330,7 +379,11 @@ export default function CourseCreateScreen() {
               ...item,
               step: {
                 ...item.step,
-                durationSeconds: normalizeDurationSeconds(durationSeconds),
+                durationSeconds:
+                  target.unit === "duration"
+                    ? normalizeDurationSeconds(target.value)
+                    : item.step.durationSeconds,
+                target,
               },
             }
           : item,
@@ -390,7 +443,7 @@ export default function CourseCreateScreen() {
   function handleLoopStepDurationChange(
     itemId: string,
     stepIndex: number,
-    durationSeconds: number,
+    target: StepTarget,
   ) {
     setItems((current) =>
       current.map((item) => {
@@ -402,7 +455,11 @@ export default function CourseCreateScreen() {
           index === stepIndex
             ? {
                 ...step,
-                durationSeconds: normalizeDurationSeconds(durationSeconds),
+                durationSeconds:
+                  target.unit === "duration"
+                    ? normalizeDurationSeconds(target.value)
+                    : step.durationSeconds,
+                target,
               }
             : step,
         );
@@ -520,8 +577,8 @@ export default function CourseCreateScreen() {
                       <BuilderStepCard
                         expanded={expandedStepId === item.step.id}
                         onDuplicate={() => handleDuplicateStep(item.id)}
-                        onDurationChange={(durationSeconds) =>
-                          handleStepDurationChange(item.id, durationSeconds)
+                        onTargetChange={(target) =>
+                          handleStepTargetChange(item.id, target)
                         }
                         onDurationInteractionChange={handleDurationSliderInteractionChange}
                         onOpenTypePicker={() => openExercisePicker(item.step)}
@@ -564,7 +621,7 @@ export default function CourseCreateScreen() {
                           setExpandedLoopId((current) => (current === item.id ? null : item.id));
                         }}
                         onLoopStepDelete={(stepId) => removeLoopStep(item.id, stepId)}
-                        onLoopStepDurationChange={handleLoopStepDurationChange}
+                        onLoopStepTargetChange={handleLoopStepDurationChange}
                         onLoopStepDurationInteractionChange={handleDurationSliderInteractionChange}
                         onLoopStepOpenTypePicker={openExercisePicker}
                         onLoopStepPress={handleLoopStepPress}
@@ -709,18 +766,18 @@ function FloatingChoiceAction({
 function BuilderStepCard({
   expanded,
   onDuplicate,
-  onDurationChange,
   onDurationInteractionChange,
   onOpenTypePicker,
   onPress,
+  onTargetChange,
   step,
 }: {
   expanded: boolean;
   onDuplicate: () => void;
-  onDurationChange: (durationSeconds: number) => void;
   onDurationInteractionChange: (isInteracting: boolean) => void;
   onOpenTypePicker: () => void;
   onPress: () => void;
+  onTargetChange: (target: StepTarget) => void;
   step: DraftStep;
 }) {
   const palette = useThemePalette();
@@ -741,11 +798,11 @@ function BuilderStepCard({
         </Pressable>
         {expanded ? (
           <StepEditor
-            durationSeconds={step.durationSeconds}
             onDuplicate={onDuplicate}
-            onDurationChange={onDurationChange}
             onDurationInteractionChange={onDurationInteractionChange}
             onOpenTypePicker={onOpenTypePicker}
+            onTargetChange={onTargetChange}
+            target={step.target}
             type={step.type}
           />
         ) : null}
@@ -764,10 +821,10 @@ function BuilderLoopCard({
   onLoopRepeatCountChange,
   onLoopRepeatPress,
   onLoopStepDelete,
-  onLoopStepDurationChange,
   onLoopStepDurationInteractionChange,
   onLoopStepOpenTypePicker,
   onLoopStepPress,
+  onLoopStepTargetChange,
   onSwipeStateChange,
 }: {
   animatedStepId: string | null;
@@ -779,10 +836,10 @@ function BuilderLoopCard({
   onLoopRepeatCountChange: (delta: number) => void;
   onLoopRepeatPress: () => void;
   onLoopStepDelete: (stepId: string) => void;
-  onLoopStepDurationChange: (
+  onLoopStepTargetChange: (
     itemId: string,
     stepIndex: number,
-    durationSeconds: number,
+    target: StepTarget,
   ) => void;
   onLoopStepDurationInteractionChange: (isInteracting: boolean) => void;
   onLoopStepOpenTypePicker: (step: DraftStep) => void;
@@ -862,12 +919,10 @@ function BuilderLoopCard({
                   </Pressable>
                   {expandedStepId === step.id ? (
                     <StepEditor
-                      durationSeconds={step.durationSeconds}
-                      onDurationChange={(durationSeconds) =>
-                        onLoopStepDurationChange(item.id, index, durationSeconds)
-                      }
                       onDurationInteractionChange={onLoopStepDurationInteractionChange}
                       onOpenTypePicker={() => onLoopStepOpenTypePicker(step)}
+                      onTargetChange={(target) => onLoopStepTargetChange(item.id, index, target)}
+                      target={step.target}
                       type={step.type}
                     />
                   ) : null}
@@ -1030,25 +1085,25 @@ function CompactStepRow({ step }: { step: DraftStep }) {
         </Animated.Text>
       </View>
       <Text numberOfLines={1} style={[styles.stepDuration, { color: palette.text }]}>
-        {formatBuilderDuration(step.durationSeconds)}
+        {formatStepTarget(step.target)}
       </Text>
     </View>
   );
 }
 
 function StepEditor({
-  durationSeconds,
   onDuplicate,
-  onDurationChange,
   onDurationInteractionChange,
   onOpenTypePicker,
+  onTargetChange,
+  target,
   type,
 }: {
-  durationSeconds: number;
   onDuplicate?: () => void;
-  onDurationChange: (durationSeconds: number) => void;
   onDurationInteractionChange: (isInteracting: boolean) => void;
   onOpenTypePicker: () => void;
+  onTargetChange: (target: StepTarget) => void;
+  target: StepTarget;
   type: StepType;
 }) {
   const palette = useThemePalette();
@@ -1057,91 +1112,86 @@ function StepEditor({
     <View style={styles.stepEditor}>
       <View style={[styles.stepEditorSeparator, { backgroundColor: palette.border }]} />
       <ExerciseTypeButton onPress={onOpenTypePicker} type={type} />
-      <DurationSliderEditor
-        durationSeconds={durationSeconds}
-        onDurationChange={onDurationChange}
+      <TargetSliderEditor
         onInteractionChange={onDurationInteractionChange}
+        onTargetChange={onTargetChange}
+        target={target}
       />
       {onDuplicate ? (
-        <SquircleButton
-          onPress={onDuplicate}
-          style={[
-            styles.duplicateButton,
-            {
-              backgroundColor: palette.surfaceMuted,
-              borderColor: palette.border,
-            },
-          ]}
-        >
-          <Ionicons color={palette.text} name="copy-outline" size={18} />
-          <Text style={[styles.duplicateButtonLabel, { color: palette.text }]}>Duplicate</Text>
-        </SquircleButton>
+        <>
+          <View style={[styles.stepEditorSeparator, { backgroundColor: palette.border }]} />
+          <SquircleButton
+            onPress={onDuplicate}
+            style={[
+              styles.duplicateButton,
+              {
+                backgroundColor: palette.surfaceMuted,
+                borderColor: palette.border,
+              },
+            ]}
+          >
+            <Ionicons color={palette.text} name="copy-outline" size={18} />
+            <Text style={[styles.duplicateButtonLabel, { color: palette.text }]}>Duplicate</Text>
+          </SquircleButton>
+        </>
       ) : null}
     </View>
   );
 }
 
-function DurationSliderEditor({
-  durationSeconds,
-  onDurationChange,
+function TargetSliderEditor({
   onInteractionChange,
+  onTargetChange,
+  target,
 }: {
-  durationSeconds: number;
-  onDurationChange: (durationSeconds: number) => void;
   onInteractionChange: (isInteracting: boolean) => void;
+  onTargetChange: (target: StepTarget) => void;
+  target: StepTarget;
 }) {
   const palette = useThemePalette();
-  const [customDurationUnit, setCustomDurationUnit] = useState<"minutes" | "hours">("minutes");
-  const [customDurationValue, setCustomDurationValue] = useState(() =>
-    formatCustomDurationValue(durationSeconds, "minutes"),
-  );
-  const [customDurationFocused, setCustomDurationFocused] = useState(false);
-  const [customDurationSelected, setCustomDurationSelected] = useState(
-    durationSeconds > DURATION_SLIDER_MAX_SECONDS,
-  );
-  const [customDurationMounted, setCustomDurationMounted] = useState(customDurationSelected);
+  const targetConfig = getTargetSliderConfig(target.unit);
+  const customIndex = targetConfig.values.length;
+  const maxPresetValue = targetConfig.values[targetConfig.values.length - 1];
+  const [customValue, setCustomValue] = useState(() => formatCustomTargetValue(target));
+  const [customValueFocused, setCustomValueFocused] = useState(false);
+  const [customSelected, setCustomSelected] = useState(target.value > maxPresetValue);
+  const [customMounted, setCustomMounted] = useState(customSelected);
   const [sliderValue, setSliderValue] = useState(() =>
-    customDurationSelected
-      ? DURATION_SLIDER_CUSTOM_INDEX
-      : getClosestDurationSliderIndex(durationSeconds),
+    customSelected ? customIndex : getClosestTargetSliderIndex(target.value, targetConfig.values),
   );
-  const [previewDurationSeconds, setPreviewDurationSeconds] = useState(durationSeconds);
-  const [previewCustomSelected, setPreviewCustomSelected] = useState(customDurationSelected);
+  const [previewTarget, setPreviewTarget] = useState(target);
+  const [previewCustomSelected, setPreviewCustomSelected] = useState(customSelected);
   const sliderValueRef = useRef(sliderValue);
   const sliderDraggingRef = useRef(false);
   const lastHapticSliderIndexRef = useRef(sliderValue);
-  const customDurationAnimation = useRef(new Animated.Value(customDurationSelected ? 1 : 0)).current;
-  const effectiveDurationSeconds = sliderDraggingRef.current
-    ? previewDurationSeconds
-    : durationSeconds;
-  const effectiveCustomSelected = sliderDraggingRef.current
-    ? previewCustomSelected
-    : customDurationSelected;
-  const showCustomInput = effectiveCustomSelected || effectiveDurationSeconds > DURATION_SLIDER_MAX_SECONDS;
+  const customAnimation = useRef(new Animated.Value(customSelected ? 1 : 0)).current;
+  const effectiveTarget = sliderDraggingRef.current ? previewTarget : target;
+  const effectiveCustomSelected = sliderDraggingRef.current ? previewCustomSelected : customSelected;
+  const showCustomInput = effectiveCustomSelected || effectiveTarget.value > maxPresetValue;
   const sliderIndex = showCustomInput
-    ? DURATION_SLIDER_CUSTOM_INDEX
-    : getClosestDurationSliderIndex(effectiveDurationSeconds);
-  const durationDisplay =
-    effectiveCustomSelected && effectiveDurationSeconds <= DURATION_SLIDER_MAX_SECONDS
+    ? customIndex
+    : getClosestTargetSliderIndex(effectiveTarget.value, targetConfig.values);
+  const targetDisplay =
+    effectiveCustomSelected && effectiveTarget.value <= maxPresetValue
       ? "Custom"
-      : formatBuilderDuration(effectiveDurationSeconds);
+      : formatStepTarget(effectiveTarget);
 
   useEffect(() => {
-    if (!customDurationFocused) {
-      setCustomDurationValue(formatCustomDurationValue(durationSeconds, customDurationUnit));
+    if (!customValueFocused) {
+      setCustomValue(formatCustomTargetValue(target));
     }
-  }, [customDurationFocused, customDurationUnit, durationSeconds]);
+  }, [customValueFocused, target]);
 
   useEffect(() => {
-    if (durationSeconds > DURATION_SLIDER_MAX_SECONDS) {
-      setCustomDurationSelected(true);
+    if (target.value > maxPresetValue) {
+      setCustomSelected(true);
     }
 
     if (!sliderDraggingRef.current) {
-      setPreviewDurationSeconds(durationSeconds);
-      setPreviewCustomSelected(durationSeconds > DURATION_SLIDER_MAX_SECONDS);
+      setPreviewTarget(target);
+      setPreviewCustomSelected(target.value > maxPresetValue);
     }
-  }, [durationSeconds]);
+  }, [maxPresetValue, target]);
 
   useEffect(() => {
     if (!sliderDraggingRef.current) {
@@ -1151,20 +1201,20 @@ function DurationSliderEditor({
 
   useEffect(() => {
     if (showCustomInput) {
-      setCustomDurationMounted(true);
+      setCustomMounted(true);
     }
 
-    Animated.timing(customDurationAnimation, {
+    Animated.timing(customAnimation, {
       duration: 180,
       easing: Easing.out(Easing.cubic),
       toValue: showCustomInput ? 1 : 0,
       useNativeDriver: false,
     }).start(({ finished }) => {
       if (finished && !showCustomInput) {
-        setCustomDurationMounted(false);
+        setCustomMounted(false);
       }
     });
-  }, [customDurationAnimation, showCustomInput]);
+  }, [customAnimation, showCustomInput]);
 
   useEffect(() => {
     return () => {
@@ -1176,48 +1226,48 @@ function DurationSliderEditor({
     sliderValueRef.current = value;
     setSliderValue(value);
 
-    const nextIndex = clamp(Math.round(value), 0, DURATION_SLIDER_CUSTOM_INDEX);
+    const nextIndex = clamp(Math.round(value), 0, customIndex);
 
     if (nextIndex !== lastHapticSliderIndexRef.current) {
       lastHapticSliderIndexRef.current = nextIndex;
       triggerDurationStepHaptic();
     }
 
-    if (nextIndex === DURATION_SLIDER_CUSTOM_INDEX) {
+    if (nextIndex === customIndex) {
       setPreviewCustomSelected(true);
-      setPreviewDurationSeconds(durationSeconds);
+      setPreviewTarget(target);
       return;
     }
 
-    const nextDurationSeconds = DURATION_SLIDER_PRESET_SECONDS[nextIndex];
+    const nextValue = targetConfig.values[nextIndex];
 
     setPreviewCustomSelected(false);
-    setPreviewDurationSeconds(nextDurationSeconds);
+    setPreviewTarget({ unit: target.unit, value: nextValue });
   }
 
   function handleSliderInteractionEnd() {
-    const nextIndex = clamp(Math.round(sliderValueRef.current), 0, DURATION_SLIDER_CUSTOM_INDEX);
+    const nextIndex = clamp(Math.round(sliderValueRef.current), 0, customIndex);
 
     sliderDraggingRef.current = false;
     setSliderValue(nextIndex);
 
-    if (nextIndex === DURATION_SLIDER_CUSTOM_INDEX) {
-      setCustomDurationSelected(true);
+    if (nextIndex === customIndex) {
+      setCustomSelected(true);
     } else {
-      const nextDurationSeconds = DURATION_SLIDER_PRESET_SECONDS[nextIndex];
+      const nextTarget = { unit: target.unit, value: targetConfig.values[nextIndex] };
 
-      setCustomDurationSelected(false);
-      setPreviewDurationSeconds(nextDurationSeconds);
+      setCustomSelected(false);
+      setPreviewTarget(nextTarget);
       setPreviewCustomSelected(false);
-      if (nextDurationSeconds !== durationSeconds) {
-        onDurationChange(nextDurationSeconds);
+      if (nextTarget.value !== target.value || nextTarget.unit !== target.unit) {
+        onTargetChange(nextTarget);
       }
     }
 
     onInteractionChange(false);
   }
 
-  function handleCustomDurationChange(value: string) {
+  function handleCustomValueChange(value: string) {
     const sanitizedValue = value.replace(",", ".").replace(/[^0-9.]/g, "");
     const firstDotIndex = sanitizedValue.indexOf(".");
     const nextValue =
@@ -1228,32 +1278,42 @@ function DurationSliderEditor({
             .replace(/\./g, "")}`;
     const numericValue = Number(nextValue);
 
-    setCustomDurationValue(nextValue);
+    setCustomValue(nextValue);
 
     if (Number.isFinite(numericValue) && numericValue > 0) {
-      const multiplier = customDurationUnit === "hours" ? 60 * 60 : 60;
-      onDurationChange(
-        Math.max(DURATION_SLIDER_MAX_SECONDS, Math.round(numericValue * multiplier)),
-      );
+      onTargetChange({
+        unit: target.unit,
+        value: Math.max(maxPresetValue, getCustomTargetRawValue(numericValue, target.unit)),
+      });
     }
   }
 
-  function handleCustomDurationBlur() {
-    setCustomDurationFocused(false);
-    setCustomDurationValue(formatCustomDurationValue(durationSeconds, customDurationUnit));
+  function handleCustomValueBlur() {
+    setCustomValueFocused(false);
+    setCustomValue(formatCustomTargetValue(target));
   }
 
-  function handleCustomUnitChange(nextUnit: "minutes" | "hours") {
-    setCustomDurationUnit(nextUnit);
-    setCustomDurationValue(formatCustomDurationValue(durationSeconds, nextUnit));
+  function handleTargetUnitChange(unit: StepTargetUnit) {
+    const nextConfig = getTargetSliderConfig(unit);
+    const nextTarget = {
+      unit,
+      value: nextConfig.values[Math.min(getClosestTargetSliderIndex(target.value, nextConfig.values), nextConfig.values.length - 1)],
+    };
+
+    setCustomSelected(false);
+    setPreviewCustomSelected(false);
+    setPreviewTarget(nextTarget);
+    setSliderValue(getClosestTargetSliderIndex(nextTarget.value, nextConfig.values));
+    onTargetChange(nextTarget);
   }
 
   return (
     <View style={styles.durationSliderEditor}>
       <View style={styles.durationSliderHeader}>
         <Text style={[styles.durationEditorValue, { color: palette.text }]}>
-          {durationDisplay}
+          {targetDisplay}
         </Text>
+        <TargetUnitMenu selectedUnit={target.unit} onSelectUnit={handleTargetUnitChange} />
       </View>
       <View
         onTouchCancel={(event) => {
@@ -1270,8 +1330,8 @@ function DurationSliderEditor({
         onTouchStart={(event) => {
           event.stopPropagation();
           sliderDraggingRef.current = true;
-          setPreviewDurationSeconds(durationSeconds);
-          setPreviewCustomSelected(customDurationSelected);
+          setPreviewTarget(target);
+          setPreviewCustomSelected(customSelected);
           onInteractionChange(true);
         }}
         style={styles.durationSliderHost}
@@ -1279,7 +1339,7 @@ function DurationSliderEditor({
         <Host style={styles.durationSliderNativeHost}>
           <Slider
             color={palette.primaryGradientStart}
-            max={DURATION_SLIDER_CUSTOM_INDEX}
+            max={customIndex}
             min={0}
             onValueChange={handleSliderValueChange}
             steps={0}
@@ -1287,23 +1347,23 @@ function DurationSliderEditor({
           />
         </Host>
       </View>
-      {customDurationMounted ? (
+      {customMounted ? (
         <Animated.View
           style={[
             styles.customDurationAnimatedWrap,
             {
-              maxHeight: customDurationAnimation.interpolate({
+              maxHeight: customAnimation.interpolate({
                 inputRange: [0, 1],
                 outputRange: [0, 52],
               }),
-              marginTop: customDurationAnimation.interpolate({
+              marginTop: customAnimation.interpolate({
                 inputRange: [0, 1],
                 outputRange: [0, spacing.xs],
               }),
-              opacity: customDurationAnimation,
+              opacity: customAnimation,
               transform: [
                 {
-                  translateY: customDurationAnimation.interpolate({
+                  translateY: customAnimation.interpolate({
                     inputRange: [0, 1],
                     outputRange: [-10, 0],
                   }),
@@ -1324,26 +1384,17 @@ function DurationSliderEditor({
             >
               <TextInput
                 keyboardType="decimal-pad"
-                onBlur={handleCustomDurationBlur}
-                onChangeText={handleCustomDurationChange}
-                onFocus={() => setCustomDurationFocused(true)}
+                onBlur={handleCustomValueBlur}
+                onChangeText={handleCustomValueChange}
+                onFocus={() => setCustomValueFocused(true)}
                 placeholderTextColor={palette.textMuted}
                 style={[styles.customDurationInput, { color: palette.text }]}
-                value={customDurationValue}
+                value={customValue}
               />
             </SquircleView>
-            <View style={styles.customDurationUnits}>
-              <DurationUnitButton
-                active={customDurationUnit === "minutes"}
-                label="min"
-                onPress={() => handleCustomUnitChange("minutes")}
-              />
-              <DurationUnitButton
-                active={customDurationUnit === "hours"}
-                label="h"
-                onPress={() => handleCustomUnitChange("hours")}
-              />
-            </View>
+            <Text style={[styles.customDurationUnitLabel, { color: palette.textMuted }]}>
+              {targetConfig.customUnitLabel}
+            </Text>
           </View>
         </Animated.View>
       ) : null}
@@ -1351,37 +1402,49 @@ function DurationSliderEditor({
   );
 }
 
-function DurationUnitButton({
-  active,
-  label,
-  onPress,
+function TargetUnitMenu({
+  onSelectUnit,
+  selectedUnit,
 }: {
-  active: boolean;
-  label: string;
-  onPress: () => void;
+  onSelectUnit: (unit: StepTargetUnit) => void;
+  selectedUnit: StepTargetUnit;
 }) {
   const palette = useThemePalette();
+  const selectedOption =
+    TARGET_UNIT_OPTIONS.find((option) => option.unit === selectedUnit) ?? TARGET_UNIT_OPTIONS[0];
 
   return (
-    <SquircleButton
-      onPress={onPress}
-      style={[
-        styles.durationUnitButton,
-        {
-          backgroundColor: active ? palette.primaryGradientStart : palette.surfaceMuted,
-          borderColor: active ? palette.primaryGradientStart : palette.border,
-        },
-      ]}
-    >
-      <Text
-        style={[
-          styles.durationUnitButtonLabel,
-          { color: active ? palette.primaryForeground : palette.text },
-        ]}
-      >
-        {label}
-      </Text>
-    </SquircleButton>
+    <Host matchContents>
+      <ContextMenu activationMethod="singlePress">
+        <ContextMenu.Trigger>
+          <SquircleView
+            style={[
+              styles.targetUnitMenuTrigger,
+              {
+                backgroundColor: palette.surfaceMuted,
+                borderColor: palette.border,
+              },
+            ]}
+          >
+            <Text style={[styles.targetUnitMenuLabel, { color: palette.textMuted }]}>
+              {selectedOption.label}
+            </Text>
+            <Ionicons color={palette.textMuted} name="chevron-down" size={22} />
+          </SquircleView>
+        </ContextMenu.Trigger>
+        <ContextMenu.Items>
+          {TARGET_UNIT_OPTIONS.map((option) => (
+            <Button
+              key={option.unit}
+              onPress={() => onSelectUnit(option.unit)}
+              systemImage={option.systemImage}
+            >
+              {option.label}
+            </Button>
+          ))}
+        </ContextMenu.Items>
+      </ContextMenu>
+    </Host>
   );
 }
 
@@ -1807,6 +1870,7 @@ function groupExistingSteps(
   steps: {
     durationSeconds: number;
     id: string;
+    target?: StepTarget;
     type: StepType;
   }[],
 ): BuilderItem[] {
@@ -1828,8 +1892,10 @@ function groupExistingSteps(
         if (
           nextFirst.type === first.type &&
           nextFirst.durationSeconds === first.durationSeconds &&
+          stepTargetsAreEqual(getStepTarget(nextFirst), getStepTarget(first)) &&
           nextSecond.type === second.type &&
-          nextSecond.durationSeconds === second.durationSeconds
+          nextSecond.durationSeconds === second.durationSeconds &&
+          stepTargetsAreEqual(getStepTarget(nextSecond), getStepTarget(second))
         ) {
           repeatCount += 1;
           cursor += 2;
@@ -1844,8 +1910,8 @@ function groupExistingSteps(
           kind: "loop",
           repeatCount,
           steps: [
-            createDraftStep(first.type, first.durationSeconds),
-            createDraftStep(second.type, second.durationSeconds),
+            createDraftStep(first.type, first.durationSeconds, first.target),
+            createDraftStep(second.type, second.durationSeconds, second.target),
           ],
         });
         index += repeatCount * 2;
@@ -1856,7 +1922,7 @@ function groupExistingSteps(
     items.push({
       id: createBuilderId("step"),
       kind: "step",
-      step: createDraftStep(first.type, first.durationSeconds),
+      step: createDraftStep(first.type, first.durationSeconds, first.target),
     });
     index += 1;
   }
@@ -1882,6 +1948,7 @@ function serializeBuilderItems(items: BuilderItem[]) {
             kind: item.kind,
             step: {
               durationSeconds: item.step.durationSeconds,
+              target: item.step.target,
               type: item.step.type,
             },
           }
@@ -1890,6 +1957,7 @@ function serializeBuilderItems(items: BuilderItem[]) {
             repeatCount: item.repeatCount,
             steps: item.steps.map((step) => ({
               durationSeconds: step.durationSeconds,
+              target: step.target,
               type: step.type,
             })),
           },
@@ -1918,10 +1986,13 @@ function createBuilderId(prefix: string) {
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-function createDraftStep(type: StepType, durationSeconds: number): DraftStep {
+function createDraftStep(type: StepType, durationSeconds: number, target?: StepTarget): DraftStep {
+  const normalizedDurationSeconds = normalizeDurationSeconds(durationSeconds);
+
   return {
-    durationSeconds: normalizeDurationSeconds(durationSeconds),
+    durationSeconds: normalizedDurationSeconds,
     id: createBuilderId(`draft-${type}`),
+    target: getStepTarget({ durationSeconds: normalizedDurationSeconds, target }),
     type,
   };
 }
@@ -1962,25 +2033,79 @@ function formatBuilderDuration(durationSeconds: number) {
   return `${minutes} min ${seconds}s`;
 }
 
-function getClosestDurationSliderIndex(durationSeconds: number) {
-  if (durationSeconds >= DURATION_SLIDER_MAX_SECONDS) {
-    return DURATION_SLIDER_PRESET_SECONDS.length - 1;
+function getTargetSliderConfig(unit: StepTargetUnit) {
+  if (unit === "repetitions") {
+    return {
+      customUnitLabel: "reps",
+      values: REPETITION_SLIDER_PRESET_VALUES,
+    };
   }
 
-  return DURATION_SLIDER_PRESET_SECONDS.reduce((closestIndex, value, index) => {
-    const closestValue = DURATION_SLIDER_PRESET_SECONDS[closestIndex];
+  if (unit === "kilometers") {
+    return {
+      customUnitLabel: "km",
+      values: KILOMETER_SLIDER_PRESET_VALUES,
+    };
+  }
 
-    return Math.abs(value - durationSeconds) < Math.abs(closestValue - durationSeconds)
-      ? index
-      : closestIndex;
+  return {
+    customUnitLabel: "min",
+    values: DURATION_SLIDER_PRESET_SECONDS,
+  };
+}
+
+function getClosestTargetSliderIndex(value: number, values: readonly number[]) {
+  return values.reduce((closestIndex, candidate, index) => {
+    const closestValue = values[closestIndex];
+
+    return Math.abs(candidate - value) < Math.abs(closestValue - value) ? index : closestIndex;
   }, 0);
 }
 
-function formatCustomDurationValue(
-  durationSeconds: number,
-  unit: "minutes" | "hours",
-) {
-  const value = unit === "hours" ? durationSeconds / (60 * 60) : durationSeconds / 60;
+function formatStepTarget(target: StepTarget) {
+  if (target.unit === "duration") {
+    return formatBuilderDuration(target.value);
+  }
+
+  if (target.unit === "repetitions") {
+    const repetitions = Math.round(target.value);
+
+    return `${repetitions} ${repetitions === 1 ? "rep" : "reps"}`;
+  }
+
+  return `${formatDecimalValue(target.value)} km`;
+}
+
+function formatCustomTargetValue(target: StepTarget) {
+  const value = target.unit === "duration" ? target.value / 60 : target.value;
+  const roundedValue = Math.round(value * 100) / 100;
+
+  return Number.isInteger(roundedValue)
+    ? String(roundedValue)
+    : String(roundedValue).replace(/0+$/, "").replace(/\.$/, "");
+}
+
+function getCustomTargetRawValue(value: number, unit: StepTargetUnit) {
+  if (unit === "duration") {
+    return Math.round(value * 60);
+  }
+
+  if (unit === "repetitions") {
+    return Math.round(value);
+  }
+
+  return Math.round(value * 100) / 100;
+}
+
+function getStepTarget(step: { durationSeconds: number; target?: StepTarget }) {
+  return step.target ?? { unit: "duration", value: normalizeDurationSeconds(step.durationSeconds) };
+}
+
+function stepTargetsAreEqual(first: StepTarget, second: StepTarget) {
+  return first.unit === second.unit && first.value === second.value;
+}
+
+function formatDecimalValue(value: number) {
   const roundedValue = Math.round(value * 100) / 100;
 
   return Number.isInteger(roundedValue)
@@ -2296,7 +2421,24 @@ const styles = StyleSheet.create({
   },
   durationSliderHeader: {
     alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
     minHeight: 24,
+  },
+  targetUnitMenuTrigger: {
+    alignItems: "center",
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.sm,
+    height: 48,
+    minWidth: 150,
+    justifyContent: "center",
+    paddingHorizontal: spacing.md,
+  },
+  targetUnitMenuLabel: {
+    fontSize: 16,
+    fontWeight: "400",
   },
   durationSliderHost: {
     minHeight: 44,
@@ -2324,22 +2466,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
-  customDurationUnits: {
-    flexDirection: "row",
-    gap: spacing.xs,
-  },
-  durationUnitButton: {
-    alignItems: "center",
-    borderRadius: radius.md,
-    borderWidth: 1,
-    height: 44,
-    justifyContent: "center",
-    minWidth: 52,
-    paddingHorizontal: spacing.sm,
-  },
-  durationUnitButtonLabel: {
+  customDurationUnitLabel: {
     fontSize: 15,
     fontWeight: "700",
+    minWidth: 42,
+    textAlign: "center",
   },
   miniIconButton: {
     alignItems: "center",
@@ -2357,7 +2488,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontWeight: "600",
-    textAlign: "center",
+    textAlign: "left",
   },
   duplicateButton: {
     alignItems: "center",

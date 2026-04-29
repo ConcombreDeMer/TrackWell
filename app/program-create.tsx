@@ -217,6 +217,7 @@ function serializeProgramDraft(programDraft: ReturnType<typeof useProgramsStore>
         name: course.name,
         steps: course.steps.map((step) => ({
           durationSeconds: step.durationSeconds,
+          target: step.target,
           type: step.type,
         })),
       })),

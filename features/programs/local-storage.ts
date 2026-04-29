@@ -147,7 +147,21 @@ function isStep(value: unknown) {
   return (
     typeof value.id === "string" &&
     typeof value.type === "string" &&
-    typeof value.durationSeconds === "number"
+    typeof value.durationSeconds === "number" &&
+    (value.target === undefined || isStepTarget(value.target))
+  );
+}
+
+function isStepTarget(value: unknown) {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    (value.unit === "duration" || value.unit === "repetitions" || value.unit === "kilometers") &&
+    typeof value.value === "number" &&
+    Number.isFinite(value.value) &&
+    value.value > 0
   );
 }
 

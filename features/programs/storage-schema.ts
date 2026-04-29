@@ -4,6 +4,7 @@ import {
   DayOfWeek,
   DifficultyLevel,
   PainLevel,
+  StepTarget,
   StepType,
 } from "./types";
 
@@ -44,6 +45,7 @@ export interface StepRow {
   position: number;
   type: StepType;
   durationSeconds: number;
+  target?: StepTarget;
   createdAt: ISODateTimeString;
   updatedAt: ISODateTimeString;
 }

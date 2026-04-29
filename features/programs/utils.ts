@@ -6,6 +6,7 @@ import {
   Program,
   ProgramDraft,
   Step,
+  StepTarget,
   StepType,
   Week,
 } from "./types";
@@ -24,6 +25,7 @@ type ImportedProgramShape = {
       name: string;
       steps: Array<{
         durationSeconds: number;
+        target?: StepTarget;
         type: StepType;
       }>;
     }>;
@@ -121,7 +123,7 @@ export function createProgramFromImport(
             dayOfWeek: course.dayOfWeek,
             id: createId(`course-${weekIndex}-${course.dayOfWeek}`),
             name: course.name.trim() || `Course ${courseIndex + 1}`,
-            steps: course.steps.map((step) => createStep(step.type, step.durationSeconds)),
+            steps: course.steps.map((step) => createStep(step.type, step.durationSeconds, step.target)),
           }))
           .sort((first, second) => first.dayOfWeek - second.dayOfWeek),
       };
@@ -168,15 +170,16 @@ export function createCourse(input: CreateCourseInput): Course {
     id: createId(`course-${input.weekIndex}-${input.dayOfWeek}`),
     name: "",
     dayOfWeek: input.dayOfWeek,
-    steps: input.steps.map((step) => createStep(step.type, step.durationSeconds)),
+    steps: input.steps.map((step) => createStep(step.type, step.durationSeconds, step.target)),
   };
 }
 
-export function createStep(type: StepType, durationSeconds: number): Step {
+export function createStep(type: StepType, durationSeconds: number, target?: StepTarget): Step {
   return {
     id: createId(`step-${type}`),
     type,
     durationSeconds,
+    target,
   };
 }
 

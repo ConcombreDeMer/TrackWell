@@ -8,6 +8,7 @@ import {
   Course,
   Program,
   ProgramDraft,
+  StepTarget,
   formatDurationFromSeconds,
   useProgramsStore,
 } from "../features/programs";
@@ -517,8 +518,10 @@ function groupCourseSteps(steps: Course["steps"]): CourseStepGroup[] {
         if (
           nextFirst.type === first.type &&
           nextFirst.durationSeconds === first.durationSeconds &&
+          courseStepTargetsAreEqual(getCourseStepTarget(nextFirst), getCourseStepTarget(first)) &&
           nextSecond.type === second.type &&
-          nextSecond.durationSeconds === second.durationSeconds
+          nextSecond.durationSeconds === second.durationSeconds &&
+          courseStepTargetsAreEqual(getCourseStepTarget(nextSecond), getCourseStepTarget(second))
         ) {
           repeatCount += 1;
           cursor += 2;
@@ -564,10 +567,37 @@ function CourseStepRow({ step }: { step: Course["steps"][number] }) {
         <Ionicons color={palette.text} name={iconName} size={32} />
       )}
       <Text style={[styles.stepLabel, { color: palette.text }]}>
-        {formatDurationFromSeconds(step.durationSeconds)} - {label}
+        {formatCourseStepTarget(getCourseStepTarget(step))} - {label}
       </Text>
     </View>
   );
+}
+
+function getCourseStepTarget(step: { durationSeconds: number; target?: StepTarget }) {
+  return step.target ?? { unit: "duration", value: step.durationSeconds };
+}
+
+function courseStepTargetsAreEqual(first: StepTarget, second: StepTarget) {
+  return first.unit === second.unit && first.value === second.value;
+}
+
+function formatCourseStepTarget(target: StepTarget) {
+  if (target.unit === "duration") {
+    return formatDurationFromSeconds(target.value);
+  }
+
+  if (target.unit === "repetitions") {
+    const repetitions = Math.round(target.value);
+
+    return `${repetitions} ${repetitions === 1 ? "rep" : "reps"}`;
+  }
+
+  const roundedKilometers = Math.round(target.value * 100) / 100;
+  const label = Number.isInteger(roundedKilometers)
+    ? String(roundedKilometers)
+    : String(roundedKilometers).replace(/0+$/, "").replace(/\.$/, "");
+
+  return `${label} km`;
 }
 
 function RepeatedPairBlock({
