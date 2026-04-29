@@ -1,6 +1,7 @@
 import { usePathname, useRouter } from "expo-router";
 import { useEffect, useMemo } from "react";
 
+import { getExerciseName } from "../exercises";
 import {
   getCourseDurationSeconds,
   getNextCourse,
@@ -94,7 +95,10 @@ export function WatchSyncBridge() {
       progressPercent: 0,
       remainingSeconds: totalDurationSeconds,
       state: "scheduled",
-      steps: nextCourse.course.steps,
+      steps: nextCourse.course.steps.map((step) => ({
+        ...step,
+        label: getExerciseName(step.type),
+      })),
       stepDurationSeconds: firstStep.durationSeconds,
       stepLabel: nextCourse.course.name,
       stepType: firstStep.type,

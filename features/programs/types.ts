@@ -1,4 +1,4 @@
-export type StepType = "walk" | "run";
+export type StepType = string;
 export type DayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 export type DifficultyLevel = "easy" | "medium" | "hard" | "extra-hard";
 export type PainLevel = "none" | "medium" | "high" | "very-high";

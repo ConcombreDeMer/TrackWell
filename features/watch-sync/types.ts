@@ -1,3 +1,5 @@
+import type { StepType } from "../programs";
+
 export type WatchWorkoutState =
   | "scheduled"
   | "idle"
@@ -48,11 +50,12 @@ export type WatchWorkoutSnapshot = {
   steps: Array<{
     durationSeconds: number;
     id: string;
-    type: "walk" | "run";
+    label: string;
+    type: StepType;
   }>;
   stepDurationSeconds: number;
   stepLabel: string;
-  stepType: "walk" | "run";
+  stepType: StepType;
   totalDurationSeconds: number;
   totalSteps: number;
   weekIndex: number;

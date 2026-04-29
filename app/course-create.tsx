@@ -1,14 +1,16 @@
 import { Ionicons } from "@expo/vector-icons";
+import { Host, Slider } from "@expo/ui/swift-ui";
+import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ReactNode, RefObject, useEffect, useRef, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import {
   Alert,
   Animated,
   Dimensions,
   Easing,
-  LayoutChangeEvent,
+  Image,
   LayoutAnimation,
   LayoutAnimationConfig,
   PanResponder,
@@ -16,14 +18,15 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   UIManager,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { addExerciseSelectionListener, getExerciseById } from "../features/exercises";
 import { DayOfWeek, StepType, getDayName, useProgramsStore } from "../features/programs";
 import { colors, radius, spacing, useThemePalette } from "../theme";
-import { ActionCardButton } from "../ui/ActionCardButton";
 import { SquircleButton, SquircleView } from "../ui/Squircle";
 
 type DraftStep = {
@@ -47,16 +50,6 @@ type BuilderItem =
 
 type ChoiceType = "step" | "loop";
 
-type LayoutBox = {
-  height: number;
-  width: number;
-  x: number;
-  y: number;
-};
-
-const LONG_PRESS_DURATION_MS = 220;
-const MOVE_TOLERANCE = 18;
-const SIDE_SELECTION_DEADZONE = 14;
 const DELETE_ACTION_WIDTH = 118;
 const DELETE_OPEN_THRESHOLD = DELETE_ACTION_WIDTH * 0.18;
 const DELETE_TRIGGER_THRESHOLD = DELETE_ACTION_WIDTH * 1.55;
@@ -65,8 +58,23 @@ const DELETE_CLOSE_THRESHOLD = DELETE_ACTION_WIDTH * 0.72;
 const DURATION_REPEAT_INITIAL_DELAY_MS = 260;
 const DURATION_REPEAT_INTERVAL_MS = 90;
 const CARD_RADIUS = 24;
-const SHORT_DURATION_SECONDS = [10, 20, 30, 45] as const;
-const AnimatedSquircleView = Animated.createAnimatedComponent(SquircleView);
+const DURATION_SLIDER_PRESET_SECONDS = [
+  5,
+  10,
+  15,
+  20,
+  25,
+  30,
+  45,
+  60,
+  ...Array.from({ length: 14 }, (_, index) => (index + 2) * 60),
+  ...Array.from({ length: 8 }, (_, index) => (index + 4) * 5 * 60),
+  60 * 60,
+  2 * 60 * 60,
+] as const;
+const DURATION_SLIDER_MAX_SECONDS =
+  DURATION_SLIDER_PRESET_SECONDS[DURATION_SLIDER_PRESET_SECONDS.length - 1];
+const DURATION_SLIDER_CUSTOM_INDEX = DURATION_SLIDER_PRESET_SECONDS.length;
 
 if (UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -106,53 +114,60 @@ export default function CourseCreateScreen() {
     editingCourse ? groupExistingSteps(editingCourse.steps) : [],
   );
   const [menuVisible, setMenuVisible] = useState(false);
-  const [highlightedChoice, setHighlightedChoice] = useState<ChoiceType | null>(null);
-  const [plusBounds, setPlusBounds] = useState<LayoutBox | null>(null);
-  const [stepBounds, setStepBounds] = useState<LayoutBox | null>(null);
-  const [loopBounds, setLoopBounds] = useState<LayoutBox | null>(null);
   const [isSwipingItem, setIsSwipingItem] = useState(false);
   const [animatedItemId, setAnimatedItemId] = useState<string | null>(null);
   const [animatedLoopStepId, setAnimatedLoopStepId] = useState<string | null>(null);
   const [expandedStepId, setExpandedStepId] = useState<string | null>(null);
   const [expandedLoopId, setExpandedLoopId] = useState<string | null>(null);
+  const ignoreStepPressUntilRef = useRef(0);
   const initialItemsSnapshot = useRef(
     serializeBuilderItems(editingCourse ? groupExistingSteps(editingCourse.steps) : []),
   );
 
-  const plusWrapRef = useRef<View | null>(null);
-  const stepChoiceRef = useRef<View | null>(null);
-  const loopChoiceRef = useRef<View | null>(null);
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const gestureStart = useRef<{ x: number; y: number } | null>(null);
-  const selectionArmed = useRef(false);
-  const highlightedChoiceRef = useRef<ChoiceType | null>(null);
   const menuProgress = useRef(new Animated.Value(0)).current;
-  const plusPressProgress = useRef(new Animated.Value(0)).current;
   const hasUnsavedChanges = serializeBuilderItems(items) !== initialItemsSnapshot.current;
 
   useEffect(() => {
-    return () => {
-      clearLongPressTimer(longPressTimer);
-    };
+    return addExerciseSelectionListener(({ targetId, type }) => {
+      setItems((current) =>
+        current.map((item) => {
+          if (item.kind === "step") {
+            return item.step.id === targetId
+              ? {
+                  ...item,
+                  step: {
+                    ...item.step,
+                    type,
+                  },
+                }
+              : item;
+          }
+
+          return {
+            ...item,
+            steps: item.steps.map((step) =>
+              step.id === targetId
+                ? {
+                    ...step,
+                    type,
+                  }
+                : step,
+            ),
+          };
+        }),
+      );
+    });
   }, []);
 
   useEffect(() => {
-    Animated.timing(menuProgress, {
-      duration: menuVisible ? 180 : 140,
+    Animated.spring(menuProgress, {
+      damping: 18,
+      mass: 0.65,
+      stiffness: 260,
       toValue: menuVisible ? 1 : 0,
       useNativeDriver: true,
     }).start();
   }, [menuProgress, menuVisible]);
-
-  useEffect(() => {
-    Animated.spring(plusPressProgress, {
-      damping: 16,
-      mass: 0.7,
-      stiffness: 240,
-      toValue: menuVisible ? 1 : 0,
-      useNativeDriver: true,
-    }).start();
-  }, [menuVisible, plusPressProgress]);
 
   if (
     Number.isNaN(parsedWeekIndex) ||
@@ -162,8 +177,6 @@ export default function CourseCreateScreen() {
     return (
       <SafeAreaView edges={["top", "bottom"]} style={styles.screen}>
         <View style={styles.invalidState}>
-          <Text style={styles.heroTitle}>Create</Text>
-          <Text style={styles.heroSubtitle}>course</Text>
           <Text style={styles.invalidText}>
             This screen needs a valid week/day context from a program.
           </Text>
@@ -177,6 +190,17 @@ export default function CourseCreateScreen() {
 
     setAnimatedItemId(nextItem.id);
     setItems((current) => [...current, nextItem]);
+  }
+
+  function handleToggleAddMenu() {
+    setMenuVisible((current) => !current);
+    triggerOptionSelectionHaptic();
+  }
+
+  function handleAddChoice(choice: ChoiceType) {
+    LayoutAnimation.configureNext(getBouncyLayoutAnimation());
+    addItem(choice);
+    setMenuVisible(false);
   }
 
   function handleCreateCourse() {
@@ -276,27 +300,29 @@ export default function CourseCreateScreen() {
   }
 
   function handleStepPress(itemId: string) {
+    if (Date.now() < ignoreStepPressUntilRef.current) {
+      return;
+    }
+
     LayoutAnimation.configureNext(getBouncyLayoutAnimation());
     setExpandedStepId((current) => (current === itemId ? null : itemId));
   }
 
-  function handleStepTypeChange(itemId: string, type: StepType) {
-    setItems((current) =>
-      current.map((item) =>
-        item.id === itemId && item.kind === "step"
-          ? {
-              ...item,
-              step: {
-                ...item.step,
-                type,
-              },
-            }
-          : item,
-      ),
-    );
+  function handleDurationSliderInteractionChange(isInteracting: boolean) {
+    ignoreStepPressUntilRef.current = Date.now() + 240;
   }
 
-  function handleStepDurationChange(itemId: string, delta: number) {
+  function openExercisePicker(step: DraftStep) {
+    router.push({
+      pathname: "/exercise-picker",
+      params: {
+        selectedType: step.type,
+        targetId: step.id,
+      },
+    });
+  }
+
+  function handleStepDurationChange(itemId: string, durationSeconds: number) {
     setItems((current) =>
       current.map((item) =>
         item.id === itemId && item.kind === "step"
@@ -304,7 +330,7 @@ export default function CourseCreateScreen() {
               ...item,
               step: {
                 ...item.step,
-                durationSeconds: getNextDurationSeconds(item.step.durationSeconds, delta),
+                durationSeconds: normalizeDurationSeconds(durationSeconds),
               },
             }
           : item,
@@ -353,11 +379,19 @@ export default function CourseCreateScreen() {
   }
 
   function handleLoopStepPress(stepId: string) {
+    if (Date.now() < ignoreStepPressUntilRef.current) {
+      return;
+    }
+
     LayoutAnimation.configureNext(getBouncyLayoutAnimation());
     setExpandedStepId((current) => (current === stepId ? null : stepId));
   }
 
-  function handleLoopStepTypeChange(itemId: string, stepIndex: number, type: StepType) {
+  function handleLoopStepDurationChange(
+    itemId: string,
+    stepIndex: number,
+    durationSeconds: number,
+  ) {
     setItems((current) =>
       current.map((item) => {
         if (item.id !== itemId || item.kind !== "loop") {
@@ -368,31 +402,7 @@ export default function CourseCreateScreen() {
           index === stepIndex
             ? {
                 ...step,
-                type,
-              }
-            : step,
-        );
-
-        return {
-          ...item,
-          steps: nextSteps,
-        };
-      }),
-    );
-  }
-
-  function handleLoopStepDurationChange(itemId: string, stepIndex: number, delta: number) {
-    setItems((current) =>
-      current.map((item) => {
-        if (item.id !== itemId || item.kind !== "loop") {
-          return item;
-        }
-
-        const nextSteps = item.steps.map((step, index) =>
-          index === stepIndex
-            ? {
-                ...step,
-                durationSeconds: getNextDurationSeconds(step.durationSeconds, delta),
+                durationSeconds: normalizeDurationSeconds(durationSeconds),
               }
             : step,
         );
@@ -417,7 +427,7 @@ export default function CourseCreateScreen() {
               steps: [
                 ...item.steps,
                 (() => {
-                  const nextStep = createDraftStep("walk", 1);
+                  const nextStep = createDraftStep("pompes", 60);
                   nextStepId = nextStep.id;
                   return nextStep;
                 })(),
@@ -445,157 +455,40 @@ export default function CourseCreateScreen() {
     );
   }
 
-  function startSelection(x: number, y: number) {
-    gestureStart.current = { x, y };
-    selectionArmed.current = false;
-    clearLongPressTimer(longPressTimer);
-    longPressTimer.current = setTimeout(() => {
-      selectionArmed.current = true;
-      setMenuVisible(true);
-      triggerSelectionHaptic();
-    }, LONG_PRESS_DURATION_MS);
-  }
-
-  function updateHighlightedChoice(x: number, y: number) {
-    const nextChoice = getChoiceAtPoint(x, y, plusBounds, stepBounds, loopBounds);
-
-    if (nextChoice && nextChoice !== highlightedChoiceRef.current) {
-      triggerOptionSelectionHaptic();
-    }
-
-    highlightedChoiceRef.current = nextChoice;
-    setHighlightedChoice(nextChoice);
-  }
-
-  function cancelSelection() {
-    clearLongPressTimer(longPressTimer);
-    gestureStart.current = null;
-    selectionArmed.current = false;
-    highlightedChoiceRef.current = null;
-    setMenuVisible(false);
-    setHighlightedChoice(null);
-  }
-
-  function finishSelection(x: number, y: number) {
-    const shouldCommit = selectionArmed.current;
-    const choice =
-      getChoiceAtPoint(x, y, plusBounds, stepBounds, loopBounds) ?? highlightedChoice;
-
-    cancelSelection();
-
-    if (shouldCommit && choice) {
-      addItem(choice);
-    }
-  }
-
-  function handleAbsoluteLayout(
-    targetRef: RefObject<View | null>,
-    setter: (layout: LayoutBox | null) => void,
-  ) {
-    requestAnimationFrame(() => {
-      targetRef.current?.measureInWindow((x, y, width, height) => {
-        setter({ height, width, x, y });
-      });
-    });
-  }
-
-  const panResponder = PanResponder.create({
-    onMoveShouldSetPanResponder: () => false,
-    onPanResponderGrant: (event) => {
-      const { pageX, pageY } = event.nativeEvent;
-
-      if (!plusBounds || !pointIsInsideBox(pageX, pageY, plusBounds)) {
-        return;
-      }
-
-      startSelection(pageX, pageY);
-    },
-    onPanResponderMove: (event) => {
-      const { pageX, pageY } = event.nativeEvent;
-
-      if (!gestureStart.current) {
-        return;
-      }
-
-      if (!selectionArmed.current) {
-        const distance = getDistance(gestureStart.current, { x: pageX, y: pageY });
-
-        if (distance > MOVE_TOLERANCE) {
-          cancelSelection();
-        }
-
-        return;
-      }
-
-      updateHighlightedChoice(pageX, pageY);
-    },
-    onPanResponderRelease: (event) => {
-      const { pageX, pageY } = event.nativeEvent;
-
-      if (!gestureStart.current) {
-        cancelSelection();
-        return;
-      }
-
-      finishSelection(pageX, pageY);
-    },
-    onPanResponderTerminate: cancelSelection,
-    onStartShouldSetPanResponder: (event) => {
-      const { pageX, pageY } = event.nativeEvent;
-
-      return Boolean(plusBounds && pointIsInsideBox(pageX, pageY, plusBounds));
-    },
-  });
-
   const contextLabel = `${(isDraftFlow ? programDraft.name : savedProgram?.name) || "Untitled program"} • Week ${parsedWeekIndex} • ${getDayName(parsedDayOfWeek)}`;
-  const sideOpacity = menuProgress;
-  const leftChoiceTransform = [
-    {
-      translateX: menuProgress.interpolate({
-        inputRange: [0, 1],
-        outputRange: [16, 0],
-      }),
-    },
-  ];
-  const rightChoiceTransform = [
-    {
-      translateX: menuProgress.interpolate({
-        inputRange: [0, 1],
-        outputRange: [-16, 0],
-      }),
-    },
-  ];
-  const backgroundOpacity = menuProgress.interpolate({
+  const addMenuOpacity = menuProgress.interpolate({
     inputRange: [0, 1],
     outputRange: [0, 1],
   });
-  const chevronOpacity = menuProgress.interpolate({
+  const addMenuTransform = [
+    {
+      translateY: menuProgress.interpolate({
+        inputRange: [0, 1],
+        outputRange: [18, 0],
+      }),
+    },
+  ];
+  const plusRotation = menuProgress.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, 1],
-  });
-  const plusScale = plusPressProgress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, 1.14],
+    outputRange: ["0deg", "45deg"],
   });
   const footerGradientColors = [
     hexToRgba(palette.background, 0),
     hexToRgba(palette.background, 0.76),
     palette.background,
   ] as const;
-  const selectorPlusColor = mixHexColors(
-    palette.surfaceMuted,
-    "#000000",
-    palette.statusBarStyle === "light" ? 0.14 : 0.2,
-  );
 
   return (
     <SafeAreaView edges={["top", "bottom"]} style={styles.screen}>
       <View style={styles.layout}>
-        <View style={[styles.mainContent, menuVisible && styles.dimmedContent]}>
+        <CloseCourseButton onPress={handleClose} />
+        <View style={styles.mainContent}>
           <Pressable onPress={closeExpandedEditors} style={styles.heroDismissArea}>
             <View pointerEvents="none" style={styles.hero}>
-              <Text style={styles.heroTitle}>{isEditing ? "Edit" : "Create"}</Text>
-              <Text style={styles.heroSubtitle}>course</Text>
+              <Text style={[styles.heroTitle, { color: palette.text }]}>
+                {isEditing ? "Edit" : "Create"}
+              </Text>
+              <Text style={[styles.heroSubtitle, { color: palette.textMuted }]}>course</Text>
               <Text style={styles.contextLabel}>{contextLabel}</Text>
             </View>
           </Pressable>
@@ -604,11 +497,8 @@ export default function CourseCreateScreen() {
             {items.length === 0 ? (
               <Pressable onPress={closeExpandedEditors} style={styles.emptyState}>
                 <View style={styles.emptyCopy}>
-                  <Text style={[styles.emptyText, { color: palette.text }]}>
-                    Add a step to your course
-                  </Text>
-                  <Text style={[styles.emptyHint, { color: palette.textMuted }]}>
-                    Press and hold the + button to choose a step or a loop.
+                  <Text style={[styles.emptyText, { color: palette.textMuted }]}>
+                    Ajoute une étape à ta course
                   </Text>
                 </View>
               </Pressable>
@@ -625,13 +515,17 @@ export default function CourseCreateScreen() {
                       key={item.id}
                       onDelete={() => removeItem(item.id)}
                       onSwipeStateChange={setIsSwipingItem}
+                      swipeDisabled={expandedStepId === item.step.id}
                     >
                       <BuilderStepCard
                         expanded={expandedStepId === item.step.id}
                         onDuplicate={() => handleDuplicateStep(item.id)}
-                        onDurationChange={(delta) => handleStepDurationChange(item.id, delta)}
+                        onDurationChange={(durationSeconds) =>
+                          handleStepDurationChange(item.id, durationSeconds)
+                        }
+                        onDurationInteractionChange={handleDurationSliderInteractionChange}
+                        onOpenTypePicker={() => openExercisePicker(item.step)}
                         onPress={() => handleStepPress(item.step.id)}
-                        onTypeChange={(type) => handleStepTypeChange(item.id, type)}
                         step={item.step}
                       />
                     </SwipeToDeleteRow>
@@ -641,6 +535,7 @@ export default function CourseCreateScreen() {
                       key={item.id}
                       onDelete={() => removeItem(item.id)}
                       onSwipeStateChange={setIsSwipingItem}
+                      swipeDisabled={item.steps.some((step) => step.id === expandedStepId)}
                     >
                       <BuilderLoopCard
                         animatedStepId={animatedLoopStepId}
@@ -670,9 +565,10 @@ export default function CourseCreateScreen() {
                         }}
                         onLoopStepDelete={(stepId) => removeLoopStep(item.id, stepId)}
                         onLoopStepDurationChange={handleLoopStepDurationChange}
+                        onLoopStepDurationInteractionChange={handleDurationSliderInteractionChange}
+                        onLoopStepOpenTypePicker={openExercisePicker}
                         onLoopStepPress={handleLoopStepPress}
                         onSwipeStateChange={setIsSwipingItem}
-                        onLoopStepTypeChange={handleLoopStepTypeChange}
                       />
                     </SwipeToDeleteRow>
                   ),
@@ -683,6 +579,37 @@ export default function CourseCreateScreen() {
           </View>
         </View>
 
+        <Animated.View
+          pointerEvents={menuVisible ? "auto" : "none"}
+          style={[
+            styles.menuBlurOverlay,
+            {
+              opacity: addMenuOpacity,
+            },
+          ]}
+        >
+          <Pressable onPress={() => setMenuVisible(false)} style={StyleSheet.absoluteFill}>
+            <BlurView
+              experimentalBlurMethod="dimezisBlurView"
+              intensity={12}
+              style={StyleSheet.absoluteFill}
+              tint={palette.statusBarStyle === "light" ? "dark" : "light"}
+            />
+            <View
+              pointerEvents="none"
+              style={[
+                styles.menuBlurTint,
+                {
+                  backgroundColor:
+                    palette.statusBarStyle === "light"
+                      ? "rgba(0,0,0,0.10)"
+                      : "rgba(255,255,255,0.05)",
+                },
+              ]}
+            />
+          </Pressable>
+        </Animated.View>
+
         <LinearGradient
           colors={footerGradientColors}
           pointerEvents="none"
@@ -690,85 +617,92 @@ export default function CourseCreateScreen() {
           style={styles.footerGradient}
         />
         <View pointerEvents="box-none" style={styles.footer}>
-          <View pointerEvents="box-none" style={styles.selectorZone}>
-            <View pointerEvents="box-none" style={styles.selectorMenuShell}>
-              <AnimatedSquircleView
-                pointerEvents="none"
-                style={[
-                  styles.selectorMenuBackground,
-                  {
-                    backgroundColor: palette.surfaceMuted,
-                    opacity: backgroundOpacity,
-                  },
-                ]}
-              />
-              <AnimatedSquircleView
-                pointerEvents="box-none"
-                style={styles.selectorMenu}
-              >
-                <Animated.View style={{ opacity: sideOpacity, transform: leftChoiceTransform }}>
-                  <ChoiceButton
-                    active={highlightedChoice === "loop"}
-                    icon="refresh-outline"
-                    innerRef={loopChoiceRef}
-                    label="Loop"
-                    onLayout={() => handleAbsoluteLayout(loopChoiceRef, setLoopBounds)}
-                  />
-                </Animated.View>
-                <View pointerEvents="box-none" style={styles.selectorCenter}>
-                  <ChevronTrail direction="left" opacity={chevronOpacity} />
-                <View
-                  {...panResponder.panHandlers}
-                  onLayout={() => handleAbsoluteLayout(plusWrapRef, setPlusBounds)}
-                  ref={plusWrapRef}
-                  style={styles.selectorPlusWrap}
-                >
-                  <Animated.View pointerEvents="none" style={{ transform: [{ scale: plusScale }] }}>
-                    <SquircleButton
-                      style={[
-                        styles.selectorPlus,
-                        {
-                          backgroundColor: selectorPlusColor,
-                          borderColor: palette.border,
-                        },
-                      ]}
-                    >
-                      <Text pointerEvents="none" style={[styles.plusLabel, { color: palette.text }]}>
-                        +
-                      </Text>
-                    </SquircleButton>
-                  </Animated.View>
-                </View>
-                  <ChevronTrail direction="right" opacity={chevronOpacity} />
-              </View>
-                <Animated.View style={{ opacity: sideOpacity, transform: rightChoiceTransform }}>
-                  <ChoiceButton
-                    active={highlightedChoice === "step"}
-                    icon="walk-outline"
-                    innerRef={stepChoiceRef}
-                    label="Step"
-                    onLayout={() => handleAbsoluteLayout(stepChoiceRef, setStepBounds)}
-                  />
-                </Animated.View>
-              </AnimatedSquircleView>
-            </View>
+          <Animated.View
+            pointerEvents={menuVisible ? "auto" : "none"}
+            style={[
+              styles.floatingChoices,
+              {
+                opacity: addMenuOpacity,
+                transform: addMenuTransform,
+              },
+            ]}
+          >
+            <FloatingChoiceAction
+              icon="refresh-outline"
+              label="Loop"
+              onPress={() => handleAddChoice("loop")}
+            />
+            <FloatingChoiceAction
+              icon="walk-outline"
+              label="Step"
+              onPress={() => handleAddChoice("step")}
+            />
+          </Animated.View>
+          <View style={styles.floatingActionsRow}>
+            <SquircleButton
+              onPress={handleCreateCourse}
+              style={[styles.floatingIconButton, { backgroundColor: palette.primaryGradientStart }]}
+            >
+              <Ionicons color={palette.primaryForeground} name="download-outline" size={25} />
+            </SquircleButton>
+            <SquircleButton
+              onPress={handleToggleAddMenu}
+              style={[styles.floatingIconButton, { backgroundColor: palette.primaryGradientStart }]}
+            >
+              <Animated.View style={{ transform: [{ rotate: plusRotation }] }}>
+                <Ionicons color={palette.primaryForeground} name="add" size={30} />
+              </Animated.View>
+            </SquircleButton>
           </View>
-
-          <ActionCardButton
-            iconName={isEditing ? "pencil" : "add"}
-            label={isEditing ? "Save Course" : "Create Course"}
-            onPress={handleCreateCourse}
-            variant="dark"
-          />
-          <ActionCardButton
-            iconName="close-outline"
-            label="Cancel"
-            onPress={handleClose}
-            variant="light"
-          />
         </View>
       </View>
     </SafeAreaView>
+  );
+}
+
+function CloseCourseButton({ onPress }: { onPress: () => void }) {
+  const palette = useThemePalette();
+
+  return (
+    <SquircleButton
+      onPress={onPress}
+      style={[
+        styles.closeCourseButton,
+        {
+          backgroundColor: palette.surface,
+          borderColor: palette.border,
+        },
+      ]}
+    >
+      <Ionicons color={palette.text} name="close" size={31} />
+    </SquircleButton>
+  );
+}
+
+function FloatingChoiceAction({
+  icon,
+  label,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  onPress: () => void;
+}) {
+  const palette = useThemePalette();
+
+  return (
+    <SquircleButton
+      onPress={onPress}
+      style={[
+        styles.floatingChoiceButton,
+        {
+          backgroundColor: palette.statusBarStyle === "light" ? "#5F5F5F" : "#5c5c5c",
+        },
+      ]}
+    >
+      <Ionicons color="#FFFFFF" name={icon} size={26} />
+      <Text style={styles.floatingChoiceLabel}>{label}</Text>
+    </SquircleButton>
   );
 }
 
@@ -776,22 +710,23 @@ function BuilderStepCard({
   expanded,
   onDuplicate,
   onDurationChange,
+  onDurationInteractionChange,
+  onOpenTypePicker,
   onPress,
-  onTypeChange,
   step,
 }: {
   expanded: boolean;
   onDuplicate: () => void;
-  onDurationChange: (delta: number) => void;
+  onDurationChange: (durationSeconds: number) => void;
+  onDurationInteractionChange: (isInteracting: boolean) => void;
+  onOpenTypePicker: () => void;
   onPress: () => void;
-  onTypeChange: (type: StepType) => void;
   step: DraftStep;
 }) {
   const palette = useThemePalette();
 
   return (
-    <SquircleButton
-      onPress={onPress}
+    <SquircleView
       style={[
         styles.stepCard,
         {
@@ -801,19 +736,21 @@ function BuilderStepCard({
       ]}
     >
       <View style={styles.stepCardContent}>
-        <CompactStepRow step={step} />
+        <Pressable onPress={onPress}>
+          <CompactStepRow step={step} />
+        </Pressable>
         {expanded ? (
           <StepEditor
             durationSeconds={step.durationSeconds}
             onDuplicate={onDuplicate}
-            onDecrease={() => onDurationChange(-1)}
-            onIncrease={() => onDurationChange(1)}
-            onSelectType={onTypeChange}
+            onDurationChange={onDurationChange}
+            onDurationInteractionChange={onDurationInteractionChange}
+            onOpenTypePicker={onOpenTypePicker}
             type={step.type}
           />
         ) : null}
       </View>
-    </SquircleButton>
+    </SquircleView>
   );
 }
 
@@ -828,9 +765,10 @@ function BuilderLoopCard({
   onLoopRepeatPress,
   onLoopStepDelete,
   onLoopStepDurationChange,
+  onLoopStepDurationInteractionChange,
+  onLoopStepOpenTypePicker,
   onLoopStepPress,
   onSwipeStateChange,
-  onLoopStepTypeChange,
 }: {
   animatedStepId: string | null;
   expandedStepId: string | null;
@@ -841,10 +779,15 @@ function BuilderLoopCard({
   onLoopRepeatCountChange: (delta: number) => void;
   onLoopRepeatPress: () => void;
   onLoopStepDelete: (stepId: string) => void;
-  onLoopStepDurationChange: (itemId: string, stepIndex: number, delta: number) => void;
+  onLoopStepDurationChange: (
+    itemId: string,
+    stepIndex: number,
+    durationSeconds: number,
+  ) => void;
+  onLoopStepDurationInteractionChange: (isInteracting: boolean) => void;
+  onLoopStepOpenTypePicker: (step: DraftStep) => void;
   onLoopStepPress: (stepId: string) => void;
   onSwipeStateChange: (isSwiping: boolean) => void;
-  onLoopStepTypeChange: (itemId: string, stepIndex: number, type: StepType) => void;
 }) {
   const palette = useThemePalette();
   const loopShellColor = mixHexColors(
@@ -902,9 +845,9 @@ function BuilderLoopCard({
             <SwipeToDeleteRow
               onDelete={() => onLoopStepDelete(step.id)}
               onSwipeStateChange={onSwipeStateChange}
+              swipeDisabled={expandedStepId === step.id}
             >
-              <SquircleButton
-                onPress={() => onLoopStepPress(step.id)}
+              <SquircleView
                 style={[
                   styles.loopStepCard,
                   {
@@ -914,18 +857,22 @@ function BuilderLoopCard({
                 ]}
               >
                 <View style={styles.stepCardContent}>
-                  <CompactStepRow step={step} />
+                  <Pressable onPress={() => onLoopStepPress(step.id)}>
+                    <CompactStepRow step={step} />
+                  </Pressable>
                   {expandedStepId === step.id ? (
                     <StepEditor
                       durationSeconds={step.durationSeconds}
-                      onDecrease={() => onLoopStepDurationChange(item.id, index, -1)}
-                      onIncrease={() => onLoopStepDurationChange(item.id, index, 1)}
-                      onSelectType={(type) => onLoopStepTypeChange(item.id, index, type)}
+                      onDurationChange={(durationSeconds) =>
+                        onLoopStepDurationChange(item.id, index, durationSeconds)
+                      }
+                      onDurationInteractionChange={onLoopStepDurationInteractionChange}
+                      onOpenTypePicker={() => onLoopStepOpenTypePicker(step)}
                       type={step.type}
                     />
                   ) : null}
                 </View>
-              </SquircleButton>
+              </SquircleView>
             </SwipeToDeleteRow>
           </AnimatedEntryView>
         ))}
@@ -993,6 +940,7 @@ function BuilderLoopCard({
 
 function CompactStepRow({ step }: { step: DraftStep }) {
   const palette = useThemePalette();
+  const exercise = getExerciseById(step.type);
   const compactIconTranslate = useRef(new Animated.Value(0)).current;
   const compactIconOpacity = useRef(new Animated.Value(1)).current;
   const compactTypeTranslate = useRef(new Animated.Value(0)).current;
@@ -1052,11 +1000,18 @@ function CompactStepRow({ step }: { step: DraftStep }) {
             transform: [{ translateY: compactIconTranslate }],
           }}
         >
-          <Ionicons
-            color={palette.text}
-            name={step.type === "walk" ? "walk-outline" : "flash-outline"}
-            size={34}
-          />
+          {exercise ? (
+            <Image
+              source={exercise.iconSource}
+              style={[styles.stepExerciseIcon, { tintColor: palette.text }]}
+            />
+          ) : (
+            <Ionicons
+              color={palette.text}
+              name={step.type === "walk" ? "walk-outline" : "flash-outline"}
+              size={34}
+            />
+          )}
         </Animated.View>
       </View>
       <View style={styles.stepMeta}>
@@ -1071,7 +1026,7 @@ function CompactStepRow({ step }: { step: DraftStep }) {
             },
           ]}
         >
-          {step.type === "walk" ? "Walk" : "Run"}
+          {exercise?.nom ?? (step.type === "walk" ? "Walk" : "Run")}
         </Animated.Text>
       </View>
       <Text numberOfLines={1} style={[styles.stepDuration, { color: palette.text }]}>
@@ -1084,41 +1039,29 @@ function CompactStepRow({ step }: { step: DraftStep }) {
 function StepEditor({
   durationSeconds,
   onDuplicate,
-  onDecrease,
-  onIncrease,
-  onSelectType,
+  onDurationChange,
+  onDurationInteractionChange,
+  onOpenTypePicker,
   type,
 }: {
   durationSeconds: number;
   onDuplicate?: () => void;
-  onDecrease: () => void;
-  onIncrease: () => void;
-  onSelectType: (type: StepType) => void;
+  onDurationChange: (durationSeconds: number) => void;
+  onDurationInteractionChange: (isInteracting: boolean) => void;
+  onOpenTypePicker: () => void;
   type: StepType;
 }) {
   const palette = useThemePalette();
 
   return (
     <View style={styles.stepEditor}>
-      <View style={styles.typeToggleRow}>
-        <MiniOptionButton
-          active={type === "walk"}
-          label="Walk"
-          onPress={() => onSelectType("walk")}
-        />
-        <MiniOptionButton
-          active={type === "run"}
-          label="Run"
-          onPress={() => onSelectType("run")}
-        />
-      </View>
-      <View style={styles.durationEditorRow}>
-        <RepeatingIconButton label="−" onStep={onDecrease} />
-        <Text style={[styles.durationEditorValue, { color: palette.text }]}>
-          {formatBuilderDuration(durationSeconds)}
-        </Text>
-        <RepeatingIconButton label="+" onStep={onIncrease} />
-      </View>
+      <View style={[styles.stepEditorSeparator, { backgroundColor: palette.border }]} />
+      <ExerciseTypeButton onPress={onOpenTypePicker} type={type} />
+      <DurationSliderEditor
+        durationSeconds={durationSeconds}
+        onDurationChange={onDurationChange}
+        onInteractionChange={onDurationInteractionChange}
+      />
       {onDuplicate ? (
         <SquircleButton
           onPress={onDuplicate}
@@ -1138,7 +1081,277 @@ function StepEditor({
   );
 }
 
-function MiniOptionButton({
+function DurationSliderEditor({
+  durationSeconds,
+  onDurationChange,
+  onInteractionChange,
+}: {
+  durationSeconds: number;
+  onDurationChange: (durationSeconds: number) => void;
+  onInteractionChange: (isInteracting: boolean) => void;
+}) {
+  const palette = useThemePalette();
+  const [customDurationUnit, setCustomDurationUnit] = useState<"minutes" | "hours">("minutes");
+  const [customDurationValue, setCustomDurationValue] = useState(() =>
+    formatCustomDurationValue(durationSeconds, "minutes"),
+  );
+  const [customDurationFocused, setCustomDurationFocused] = useState(false);
+  const [customDurationSelected, setCustomDurationSelected] = useState(
+    durationSeconds > DURATION_SLIDER_MAX_SECONDS,
+  );
+  const [customDurationMounted, setCustomDurationMounted] = useState(customDurationSelected);
+  const [sliderValue, setSliderValue] = useState(() =>
+    customDurationSelected
+      ? DURATION_SLIDER_CUSTOM_INDEX
+      : getClosestDurationSliderIndex(durationSeconds),
+  );
+  const [previewDurationSeconds, setPreviewDurationSeconds] = useState(durationSeconds);
+  const [previewCustomSelected, setPreviewCustomSelected] = useState(customDurationSelected);
+  const sliderValueRef = useRef(sliderValue);
+  const sliderDraggingRef = useRef(false);
+  const lastHapticSliderIndexRef = useRef(sliderValue);
+  const customDurationAnimation = useRef(new Animated.Value(customDurationSelected ? 1 : 0)).current;
+  const effectiveDurationSeconds = sliderDraggingRef.current
+    ? previewDurationSeconds
+    : durationSeconds;
+  const effectiveCustomSelected = sliderDraggingRef.current
+    ? previewCustomSelected
+    : customDurationSelected;
+  const showCustomInput = effectiveCustomSelected || effectiveDurationSeconds > DURATION_SLIDER_MAX_SECONDS;
+  const sliderIndex = showCustomInput
+    ? DURATION_SLIDER_CUSTOM_INDEX
+    : getClosestDurationSliderIndex(effectiveDurationSeconds);
+  const durationDisplay =
+    effectiveCustomSelected && effectiveDurationSeconds <= DURATION_SLIDER_MAX_SECONDS
+      ? "Custom"
+      : formatBuilderDuration(effectiveDurationSeconds);
+
+  useEffect(() => {
+    if (!customDurationFocused) {
+      setCustomDurationValue(formatCustomDurationValue(durationSeconds, customDurationUnit));
+    }
+  }, [customDurationFocused, customDurationUnit, durationSeconds]);
+
+  useEffect(() => {
+    if (durationSeconds > DURATION_SLIDER_MAX_SECONDS) {
+      setCustomDurationSelected(true);
+    }
+
+    if (!sliderDraggingRef.current) {
+      setPreviewDurationSeconds(durationSeconds);
+      setPreviewCustomSelected(durationSeconds > DURATION_SLIDER_MAX_SECONDS);
+    }
+  }, [durationSeconds]);
+
+  useEffect(() => {
+    if (!sliderDraggingRef.current) {
+      setSliderValue(sliderIndex);
+    }
+  }, [sliderIndex]);
+
+  useEffect(() => {
+    if (showCustomInput) {
+      setCustomDurationMounted(true);
+    }
+
+    Animated.timing(customDurationAnimation, {
+      duration: 180,
+      easing: Easing.out(Easing.cubic),
+      toValue: showCustomInput ? 1 : 0,
+      useNativeDriver: false,
+    }).start(({ finished }) => {
+      if (finished && !showCustomInput) {
+        setCustomDurationMounted(false);
+      }
+    });
+  }, [customDurationAnimation, showCustomInput]);
+
+  useEffect(() => {
+    return () => {
+      onInteractionChange(false);
+    };
+  }, [onInteractionChange]);
+
+  function handleSliderValueChange(value: number) {
+    sliderValueRef.current = value;
+    setSliderValue(value);
+
+    const nextIndex = clamp(Math.round(value), 0, DURATION_SLIDER_CUSTOM_INDEX);
+
+    if (nextIndex !== lastHapticSliderIndexRef.current) {
+      lastHapticSliderIndexRef.current = nextIndex;
+      triggerDurationStepHaptic();
+    }
+
+    if (nextIndex === DURATION_SLIDER_CUSTOM_INDEX) {
+      setPreviewCustomSelected(true);
+      setPreviewDurationSeconds(durationSeconds);
+      return;
+    }
+
+    const nextDurationSeconds = DURATION_SLIDER_PRESET_SECONDS[nextIndex];
+
+    setPreviewCustomSelected(false);
+    setPreviewDurationSeconds(nextDurationSeconds);
+  }
+
+  function handleSliderInteractionEnd() {
+    const nextIndex = clamp(Math.round(sliderValueRef.current), 0, DURATION_SLIDER_CUSTOM_INDEX);
+
+    sliderDraggingRef.current = false;
+    setSliderValue(nextIndex);
+
+    if (nextIndex === DURATION_SLIDER_CUSTOM_INDEX) {
+      setCustomDurationSelected(true);
+    } else {
+      const nextDurationSeconds = DURATION_SLIDER_PRESET_SECONDS[nextIndex];
+
+      setCustomDurationSelected(false);
+      setPreviewDurationSeconds(nextDurationSeconds);
+      setPreviewCustomSelected(false);
+      if (nextDurationSeconds !== durationSeconds) {
+        onDurationChange(nextDurationSeconds);
+      }
+    }
+
+    onInteractionChange(false);
+  }
+
+  function handleCustomDurationChange(value: string) {
+    const sanitizedValue = value.replace(",", ".").replace(/[^0-9.]/g, "");
+    const firstDotIndex = sanitizedValue.indexOf(".");
+    const nextValue =
+      firstDotIndex === -1
+        ? sanitizedValue
+        : `${sanitizedValue.slice(0, firstDotIndex + 1)}${sanitizedValue
+            .slice(firstDotIndex + 1)
+            .replace(/\./g, "")}`;
+    const numericValue = Number(nextValue);
+
+    setCustomDurationValue(nextValue);
+
+    if (Number.isFinite(numericValue) && numericValue > 0) {
+      const multiplier = customDurationUnit === "hours" ? 60 * 60 : 60;
+      onDurationChange(
+        Math.max(DURATION_SLIDER_MAX_SECONDS, Math.round(numericValue * multiplier)),
+      );
+    }
+  }
+
+  function handleCustomDurationBlur() {
+    setCustomDurationFocused(false);
+    setCustomDurationValue(formatCustomDurationValue(durationSeconds, customDurationUnit));
+  }
+
+  function handleCustomUnitChange(nextUnit: "minutes" | "hours") {
+    setCustomDurationUnit(nextUnit);
+    setCustomDurationValue(formatCustomDurationValue(durationSeconds, nextUnit));
+  }
+
+  return (
+    <View style={styles.durationSliderEditor}>
+      <View style={styles.durationSliderHeader}>
+        <Text style={[styles.durationEditorValue, { color: palette.text }]}>
+          {durationDisplay}
+        </Text>
+      </View>
+      <View
+        onTouchCancel={(event) => {
+          event.stopPropagation();
+          handleSliderInteractionEnd();
+        }}
+        onTouchEnd={(event) => {
+          event.stopPropagation();
+          handleSliderInteractionEnd();
+        }}
+        onTouchMove={(event) => {
+          event.stopPropagation();
+        }}
+        onTouchStart={(event) => {
+          event.stopPropagation();
+          sliderDraggingRef.current = true;
+          setPreviewDurationSeconds(durationSeconds);
+          setPreviewCustomSelected(customDurationSelected);
+          onInteractionChange(true);
+        }}
+        style={styles.durationSliderHost}
+      >
+        <Host style={styles.durationSliderNativeHost}>
+          <Slider
+            color={palette.primaryGradientStart}
+            max={DURATION_SLIDER_CUSTOM_INDEX}
+            min={0}
+            onValueChange={handleSliderValueChange}
+            steps={0}
+            value={sliderValue}
+          />
+        </Host>
+      </View>
+      {customDurationMounted ? (
+        <Animated.View
+          style={[
+            styles.customDurationAnimatedWrap,
+            {
+              maxHeight: customDurationAnimation.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, 52],
+              }),
+              marginTop: customDurationAnimation.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, spacing.xs],
+              }),
+              opacity: customDurationAnimation,
+              transform: [
+                {
+                  translateY: customDurationAnimation.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [-10, 0],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
+          <View style={styles.customDurationRow}>
+            <SquircleView
+              style={[
+                styles.customDurationInputShell,
+                {
+                  backgroundColor: palette.surfaceMuted,
+                  borderColor: palette.border,
+                },
+              ]}
+            >
+              <TextInput
+                keyboardType="decimal-pad"
+                onBlur={handleCustomDurationBlur}
+                onChangeText={handleCustomDurationChange}
+                onFocus={() => setCustomDurationFocused(true)}
+                placeholderTextColor={palette.textMuted}
+                style={[styles.customDurationInput, { color: palette.text }]}
+                value={customDurationValue}
+              />
+            </SquircleView>
+            <View style={styles.customDurationUnits}>
+              <DurationUnitButton
+                active={customDurationUnit === "minutes"}
+                label="min"
+                onPress={() => handleCustomUnitChange("minutes")}
+              />
+              <DurationUnitButton
+                active={customDurationUnit === "hours"}
+                label="h"
+                onPress={() => handleCustomUnitChange("hours")}
+              />
+            </View>
+          </View>
+        </Animated.View>
+      ) : null}
+    </View>
+  );
+}
+
+function DurationUnitButton({
   active,
   label,
   onPress,
@@ -1149,17 +1362,11 @@ function MiniOptionButton({
 }) {
   const palette = useThemePalette();
 
-  function handlePress() {
-    triggerTypeSelectionHaptic();
-    onPress();
-  }
-
   return (
     <SquircleButton
-      onPress={handlePress}
+      onPress={onPress}
       style={[
-        styles.miniOptionButton,
-        active && styles.miniOptionButtonActive,
+        styles.durationUnitButton,
         {
           backgroundColor: active ? palette.primaryGradientStart : palette.surfaceMuted,
           borderColor: active ? palette.primaryGradientStart : palette.border,
@@ -1168,8 +1375,7 @@ function MiniOptionButton({
     >
       <Text
         style={[
-          styles.miniOptionLabel,
-          active && styles.miniOptionLabelActive,
+          styles.durationUnitButtonLabel,
           { color: active ? palette.primaryForeground : palette.text },
         ]}
       >
@@ -1179,28 +1385,46 @@ function MiniOptionButton({
   );
 }
 
-function MiniIconButton({
-  label,
+function ExerciseTypeButton({
   onPress,
+  type,
 }: {
-  label: string;
   onPress: () => void;
+  type: StepType;
 }) {
   const palette = useThemePalette();
+  const exercise = getExerciseById(type);
 
   return (
-    <SquircleButton
-      onPress={onPress}
-      style={[
-        styles.miniIconButton,
-        {
-          backgroundColor: palette.surfaceMuted,
-          borderColor: palette.border,
-        },
-      ]}
-    >
-      <Text style={[styles.miniIconLabel, { color: palette.text }]}>{label}</Text>
-    </SquircleButton>
+    <View style={styles.exerciseTypeField}>
+      <SquircleButton
+        onPress={onPress}
+        style={[
+          styles.exerciseTypeButton,
+          {
+            backgroundColor: palette.surfaceMuted,
+            borderColor: palette.border,
+          },
+        ]}
+      >
+        {exercise ? (
+          <Image
+            source={exercise.iconSource}
+            style={[styles.exerciseTypeIcon, { tintColor: palette.text }]}
+          />
+        ) : (
+          <Ionicons
+            color={palette.text}
+            name={type === "walk" ? "walk-outline" : "flash-outline"}
+            size={28}
+          />
+        )}
+        <Text numberOfLines={1} style={[styles.exerciseTypeName, { color: palette.text }]}>
+          {exercise?.nom ?? (type === "walk" ? "Walk" : "Run")}
+        </Text>
+        <Ionicons color={palette.textMuted} name="chevron-down" size={20} />
+      </SquircleButton>
+    </View>
   );
 }
 
@@ -1328,11 +1552,13 @@ function SwipeToDeleteRow({
   children,
   onDelete,
   onSwipeStateChange,
+  swipeDisabled = false,
 }: {
   animateIn?: boolean;
   children: ReactNode;
   onDelete: () => void;
   onSwipeStateChange: (isSwiping: boolean) => void;
+  swipeDisabled?: boolean;
 }) {
   const palette = useThemePalette();
   const translateX = useRef(new Animated.Value(0)).current;
@@ -1343,6 +1569,8 @@ function SwipeToDeleteRow({
   const offsetRef = useRef(0);
   const isSwipeActiveRef = useRef(false);
   const isDeletingRef = useRef(false);
+  const swipeDisabledRef = useRef(swipeDisabled);
+  const previousSwipeDisabledRef = useRef(swipeDisabled);
   const revealProgress = translateX.interpolate({
     inputRange: [-DELETE_ACTION_WIDTH, 0],
     outputRange: [1, 0],
@@ -1405,6 +1633,18 @@ function SwipeToDeleteRow({
   }
 
   useEffect(() => {
+    const wasSwipeDisabled = previousSwipeDisabledRef.current;
+
+    swipeDisabledRef.current = swipeDisabled;
+    previousSwipeDisabledRef.current = swipeDisabled;
+
+    if (swipeDisabled && !wasSwipeDisabled) {
+      animateTo(0);
+      setSwipeActive(false);
+    }
+  });
+
+  useEffect(() => {
     if (!animateIn) {
       return;
     }
@@ -1435,22 +1675,41 @@ function SwipeToDeleteRow({
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, gestureState) =>
+        !swipeDisabledRef.current &&
         Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 1.1 &&
         Math.abs(gestureState.dx) > 6,
       onPanResponderGrant: () => {
+        if (swipeDisabledRef.current) {
+          return;
+        }
+
         translateX.stopAnimation((value) => {
           offsetRef.current = value;
         });
       },
       onPanResponderStart: () => {
+        if (swipeDisabledRef.current) {
+          return;
+        }
+
         setSwipeActive(true);
       },
       onPanResponderMove: (_, gestureState) => {
+        if (swipeDisabledRef.current) {
+          return;
+        }
+
         setSwipeActive(true);
         const nextValue = clamp(offsetRef.current + gestureState.dx, -DELETE_MAX_SWIPE, 0);
         translateX.setValue(nextValue);
       },
       onPanResponderRelease: (_, gestureState) => {
+        if (swipeDisabledRef.current) {
+          animateTo(0);
+          setSwipeActive(false);
+          return;
+        }
+
         const finalValue = offsetRef.current + gestureState.dx;
         const isCurrentlyOpen = offsetRef.current <= -DELETE_ACTION_WIDTH * 0.5;
 
@@ -1484,7 +1743,7 @@ function SwipeToDeleteRow({
         setSwipeActive(false);
       },
       onPanResponderTerminationRequest: () => false,
-      onShouldBlockNativeResponder: () => true,
+      onShouldBlockNativeResponder: () => !swipeDisabledRef.current,
     }),
   ).current;
 
@@ -1541,144 +1800,6 @@ function SwipeToDeleteRow({
         {children}
       </Animated.View>
     </View>
-  );
-}
-
-function ChoiceButton({
-  active,
-  icon,
-  innerRef,
-  label,
-  onLayout,
-}: {
-  active: boolean;
-  icon: keyof typeof Ionicons.glyphMap;
-  innerRef: RefObject<View | null>;
-  label: string;
-  onLayout: (event: LayoutChangeEvent) => void;
-}) {
-  const palette = useThemePalette();
-  const activeChoiceColor = mixHexColors(
-    palette.surfaceMuted,
-    "#000000",
-    palette.statusBarStyle === "light" ? 0.08 : 0.12,
-  );
-  const activeProgress = useRef(new Animated.Value(active ? 1 : 0)).current;
-
-  useEffect(() => {
-    Animated.spring(activeProgress, {
-      damping: 18,
-      mass: 0.8,
-      stiffness: 240,
-      toValue: active ? 1 : 0,
-      useNativeDriver: true,
-    }).start();
-  }, [active, activeProgress]);
-
-  return (
-    <View ref={innerRef} onLayout={onLayout}>
-      <SquircleView
-        style={[
-          styles.choiceButton,
-          active && styles.choiceButtonActive,
-          {
-            backgroundColor: active ? activeChoiceColor : "transparent",
-          },
-        ]}
-      >
-        <AnimatedSquircleView
-          pointerEvents="none"
-          style={[
-            styles.choiceButtonHighlight,
-            {
-              backgroundColor: activeChoiceColor,
-            },
-            {
-              opacity: activeProgress,
-              transform: [
-                {
-                  scale: activeProgress.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0.82, 1],
-                  }),
-                },
-              ],
-            },
-          ]}
-        />
-        <Animated.View
-          style={{
-            transform: [
-              {
-                scale: activeProgress.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [1, 1.18],
-                }),
-              },
-            ],
-          }}
-        >
-          <Ionicons color={palette.text} name={icon} size={32} />
-        </Animated.View>
-        <Text style={[styles.choiceLabel, { color: palette.text }]}>{label}</Text>
-      </SquircleView>
-    </View>
-  );
-}
-
-function ChevronTrail({
-  direction,
-  opacity,
-}: {
-  direction: "left" | "right";
-  opacity: Animated.AnimatedInterpolation<number>;
-}) {
-  const first = useRef(new Animated.Value(0.35)).current;
-  const second = useRef(new Animated.Value(0.55)).current;
-  const third = useRef(new Animated.Value(0.75)).current;
-
-  useEffect(() => {
-    const values = [first, second, third];
-    values.forEach((value) => value.setValue(0.2));
-
-    const animations = Animated.loop(
-      Animated.sequence(
-        values.flatMap((value) => [
-          Animated.timing(value, {
-            duration: 240,
-            toValue: 1,
-            useNativeDriver: true,
-          }),
-          Animated.timing(value, {
-            duration: 240,
-            toValue: 0.2,
-            useNativeDriver: true,
-          }),
-        ]),
-      ),
-    );
-
-    animations.start();
-
-    return () => {
-      animations.stop();
-    };
-  }, [first, second, third]);
-
-  const symbol = direction === "left" ? "‹" : "›";
-  const orderedValues = direction === "left" ? [third, second, first] : [first, second, third];
-
-  return (
-    <Animated.View style={[styles.chevronTrail, { opacity }]}>
-      {orderedValues.map((value, index) => (
-        <Animated.Text
-          key={`${direction}-${index}`}
-          style={[styles.selectorChevron, { opacity: value }]}
-        >
-          {symbol}
-        </Animated.Text>
-      ))}
-    </Animated.View>
   );
 }
 
@@ -1780,7 +1901,7 @@ function createStepItem(index: number): BuilderItem {
   return {
     id: createBuilderId(`step-item-${index}`),
     kind: "step",
-    step: createDraftStep("walk", 5 * 60),
+    step: createDraftStep("pompes", 60),
   };
 }
 
@@ -1789,7 +1910,7 @@ function createLoopItem(index: number): BuilderItem {
     id: createBuilderId(`loop-item-${index}`),
     kind: "loop",
     repeatCount: 3,
-    steps: [createDraftStep("run", 60), createDraftStep("walk", 60)],
+    steps: [createDraftStep("squats", 60), createDraftStep("pompes", 60)],
   };
 }
 
@@ -1806,51 +1927,29 @@ function createDraftStep(type: StepType, durationSeconds: number): DraftStep {
 }
 
 function normalizeDurationSeconds(durationSeconds: number) {
-  const roundedDuration = Math.max(10, Math.round(durationSeconds));
+  const roundedDuration = Math.max(5, Math.round(durationSeconds));
 
   if (roundedDuration < 60) {
     return (
-      SHORT_DURATION_SECONDS.reduce((closest, value) =>
+      DURATION_SLIDER_PRESET_SECONDS.filter((value) => value < 60).reduce((closest, value) =>
         Math.abs(value - roundedDuration) < Math.abs(closest - roundedDuration) ? value : closest,
-      ) ?? 10
+      ) ?? 5
     );
   }
 
   return Math.max(60, Math.round(roundedDuration / 60) * 60);
 }
 
-function getNextDurationSeconds(currentDurationSeconds: number, delta: number) {
-  if (delta === 0) {
-    return currentDurationSeconds;
-  }
-
-  const direction = delta > 0 ? 1 : -1;
-  let nextDuration = normalizeDurationSeconds(currentDurationSeconds);
-
-  for (let index = 0; index < Math.abs(delta); index += 1) {
-    if (direction > 0) {
-      if (nextDuration < 45) {
-        nextDuration =
-          SHORT_DURATION_SECONDS.find((value) => value > nextDuration) ?? 45;
-      } else if (nextDuration === 45) {
-        nextDuration = 60;
-      } else {
-        nextDuration += 60;
-      }
-    } else if (nextDuration <= 60) {
-      nextDuration =
-        [...SHORT_DURATION_SECONDS].reverse().find((value) => value < nextDuration) ?? 10;
-    } else {
-      nextDuration = Math.max(60, nextDuration - 60);
-    }
-  }
-
-  return nextDuration;
-}
-
 function formatBuilderDuration(durationSeconds: number) {
   if (durationSeconds < 60) {
     return `${durationSeconds} sec`;
+  }
+
+  if (durationSeconds >= 60 * 60) {
+    const hours = Math.floor(durationSeconds / (60 * 60));
+    const remainingMinutes = Math.floor((durationSeconds % (60 * 60)) / 60);
+
+    return remainingMinutes === 0 ? `${hours} h` : `${hours} h ${remainingMinutes} min`;
   }
 
   const minutes = Math.floor(durationSeconds / 60);
@@ -1863,54 +1962,30 @@ function formatBuilderDuration(durationSeconds: number) {
   return `${minutes} min ${seconds}s`;
 }
 
-function clearLongPressTimer(timerRef: { current: ReturnType<typeof setTimeout> | null }) {
-  if (timerRef.current) {
-    clearTimeout(timerRef.current);
-    timerRef.current = null;
+function getClosestDurationSliderIndex(durationSeconds: number) {
+  if (durationSeconds >= DURATION_SLIDER_MAX_SECONDS) {
+    return DURATION_SLIDER_PRESET_SECONDS.length - 1;
   }
+
+  return DURATION_SLIDER_PRESET_SECONDS.reduce((closestIndex, value, index) => {
+    const closestValue = DURATION_SLIDER_PRESET_SECONDS[closestIndex];
+
+    return Math.abs(value - durationSeconds) < Math.abs(closestValue - durationSeconds)
+      ? index
+      : closestIndex;
+  }, 0);
 }
 
-function pointIsInsideBox(x: number, y: number, box: LayoutBox) {
-  return x >= box.x && x <= box.x + box.width && y >= box.y && y <= box.y + box.height;
-}
+function formatCustomDurationValue(
+  durationSeconds: number,
+  unit: "minutes" | "hours",
+) {
+  const value = unit === "hours" ? durationSeconds / (60 * 60) : durationSeconds / 60;
+  const roundedValue = Math.round(value * 100) / 100;
 
-function getChoiceAtPoint(
-  x: number,
-  y: number,
-  plusBox: LayoutBox | null,
-  stepBox: LayoutBox | null,
-  loopBox: LayoutBox | null,
-): ChoiceType | null {
-  if (!plusBox) {
-    return null;
-  }
-
-  const menuTop = Math.min(stepBox?.y ?? plusBox.y, loopBox?.y ?? plusBox.y, plusBox.y);
-  const menuBottom = Math.max(
-    (stepBox?.y ?? plusBox.y) + (stepBox?.height ?? plusBox.height),
-    (loopBox?.y ?? plusBox.y) + (loopBox?.height ?? plusBox.height),
-    plusBox.y + plusBox.height,
-  );
-
-  if (y < menuTop || y > menuBottom) {
-    return null;
-  }
-
-  const plusCenterX = plusBox.x + plusBox.width / 2;
-
-  if (x < plusCenterX - SIDE_SELECTION_DEADZONE) {
-    return "loop";
-  }
-
-  if (x > plusCenterX + SIDE_SELECTION_DEADZONE) {
-    return "step";
-  }
-
-  return null;
-}
-
-function getDistance(first: { x: number; y: number }, second: { x: number; y: number }) {
-  return Math.hypot(second.x - first.x, second.y - first.y);
+  return Number.isInteger(roundedValue)
+    ? String(roundedValue)
+    : String(roundedValue).replace(/0+$/, "").replace(/\.$/, "");
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -1937,14 +2012,6 @@ function getBouncyLayoutAnimation(): LayoutAnimationConfig {
   };
 }
 
-async function triggerSelectionHaptic() {
-  try {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  } catch {
-    // Some environments may disable haptics; fail silently.
-  }
-}
-
 async function triggerOptionSelectionHaptic() {
   try {
     await Haptics.selectionAsync();
@@ -1961,23 +2028,7 @@ async function triggerDeleteHaptic() {
   }
 }
 
-async function triggerStepOpenHaptic() {
-  try {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  } catch {
-    // Some environments may disable haptics; fail silently.
-  }
-}
-
 async function triggerDurationStepHaptic() {
-  try {
-    await Haptics.selectionAsync();
-  } catch {
-    // Some environments may disable haptics; fail silently.
-  }
-}
-
-async function triggerTypeSelectionHaptic() {
   try {
     await Haptics.selectionAsync();
   } catch {
@@ -2069,7 +2120,6 @@ const styles = StyleSheet.create({
   hero: {
     alignItems: "center",
     gap: 2,
-    paddingTop: spacing.sm,
   },
   heroDismissArea: {
     borderRadius: CARD_RADIUS,
@@ -2089,8 +2139,20 @@ const styles = StyleSheet.create({
   contextLabel: {
     color: colors.textMuted,
     fontSize: 13,
-    marginTop: spacing.sm,
+    marginTop: spacing.md,
     textAlign: "center",
+  },
+  closeCourseButton: {
+    alignItems: "center",
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    height: 48,
+    justifyContent: "center",
+    position: "absolute",
+    right: spacing.xxl,
+    top: spacing.sm,
+    width: 48,
+    zIndex: 40,
   },
   builderArea: {
     flex: 1,
@@ -2109,8 +2171,8 @@ const styles = StyleSheet.create({
     maxWidth: 360,
   },
   emptyText: {
-    fontSize: 20,
-    fontWeight: "600",
+    fontSize: 21,
+    fontWeight: "400",
     lineHeight: 28,
     textAlign: "center",
   },
@@ -2129,7 +2191,7 @@ const styles = StyleSheet.create({
     minHeight: 140,
   },
   swipeRow: {
-    overflow: "hidden",
+    overflow: "visible",
     position: "relative",
   },
   swipeCard: {
@@ -2175,6 +2237,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: 44,
   },
+  stepExerciseIcon: {
+    height: 38,
+    resizeMode: "contain",
+    width: 38,
+  },
   stepMeta: {
     flex: 1,
     minWidth: 0,
@@ -2192,33 +2259,87 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingTop: spacing.xs,
   },
-  typeToggleRow: {
+  stepEditorSeparator: {
+    height: StyleSheet.hairlineWidth,
+    width: "100%",
+  },
+  exerciseTypeField: {
+    gap: spacing.xs,
+  },
+  exerciseTypeButton: {
+    alignItems: "center",
+    borderRadius: radius.md,
+    borderWidth: 1,
     flexDirection: "row",
     gap: spacing.sm,
-  },
-  miniOptionButton: {
-    alignItems: "center",
-    borderWidth: 1,
-    borderRadius: radius.md,
-    flex: 1,
-    justifyContent: "center",
-    minHeight: 42,
-    minWidth: 0,
+    minHeight: 52,
     paddingHorizontal: spacing.md,
   },
-  miniOptionButtonActive: {
+  exerciseTypeIcon: {
+    height: 34,
+    resizeMode: "contain",
+    width: 42,
   },
-  miniOptionLabel: {
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  miniOptionLabelActive: {
+  exerciseTypeName: {
+    flex: 1,
+    fontSize: 16,
     fontWeight: "700",
+    minWidth: 0,
   },
   durationEditorRow: {
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "space-between",
+  },
+  durationSliderEditor: {
+    gap: 0,
+  },
+  durationSliderHeader: {
+    alignItems: "center",
+    minHeight: 24,
+  },
+  durationSliderHost: {
+    minHeight: 44,
+  },
+  durationSliderNativeHost: {
+    minHeight: 44,
+  },
+  customDurationAnimatedWrap: {
+    overflow: "hidden",
+  },
+  customDurationRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  customDurationInputShell: {
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flex: 1,
+  },
+  customDurationInput: {
+    fontSize: 16,
+    fontWeight: "600",
+    minHeight: 44,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  customDurationUnits: {
+    flexDirection: "row",
+    gap: spacing.xs,
+  },
+  durationUnitButton: {
+    alignItems: "center",
+    borderRadius: radius.md,
+    borderWidth: 1,
+    height: 44,
+    justifyContent: "center",
+    minWidth: 52,
+    paddingHorizontal: spacing.sm,
+  },
+  durationUnitButtonLabel: {
+    fontSize: 15,
+    fontWeight: "700",
   },
   miniIconButton: {
     alignItems: "center",
@@ -2335,8 +2456,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     bottom: spacing.sm,
-    gap: 8,
-    left: spacing.xl,
+    alignItems: "flex-end",
     position: "absolute",
     right: spacing.xl,
     zIndex: 30,
@@ -2349,113 +2469,44 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 10,
   },
-  selectorZone: {
+  menuBlurOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 20,
+  },
+  menuBlurTint: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  floatingChoices: {
+    alignItems: "flex-end",
+    gap: 6,
+    marginBottom: 8,
+  },
+  floatingChoiceButton: {
     alignItems: "center",
-    minHeight: 112,
-    justifyContent: "flex-end",
-  },
-  selectorMenuShell: {
-    alignSelf: "stretch",
-    justifyContent: "center",
-    width: "100%",
-  },
-  selectorMenuBackground: {
-    borderRadius: 32,
-    bottom: 0,
-    left: 0,
-    position: "absolute",
-    right: 0,
-    top: 0,
-  },
-  selectorMenu: {
-    alignItems: "center",
-    alignSelf: "stretch",
-    borderRadius: 32,
+    borderRadius: 13,
     flexDirection: "row",
-    justifyContent: "space-between",
-    minHeight: 92,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    width: "100%",
-  },
-  choiceButton: {
-    alignItems: "center",
-    borderRadius: radius.lg,
-    gap: spacing.xs,
-    justifyContent: "center",
-    minWidth: 72,
-    overflow: "hidden",
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.sm,
-    position: "relative",
-  },
-  choiceButtonActive: {
-  },
-  choiceButtonHighlight: {
-    borderRadius: radius.lg,
-    bottom: 0,
-    left: 0,
-    position: "absolute",
-    right: 0,
-    top: 0,
-  },
-  choiceLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  selectorCenter: {
-    alignItems: "center",
-    flex: 1,
-    flexDirection: "row",
-    justifyContent: "center",
-  },
-  selectorPlusWrap: {
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 72,
-    minWidth: 104,
-  },
-  chevronTrail: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 1,
-    justifyContent: "center",
-    minWidth: 36,
-  },
-  selectorChevron: {
-    color: colors.textMuted,
-    fontSize: 34,
-    lineHeight: 34,
-  },
-  selectorPlus: {
-    alignItems: "center",
-    borderWidth: 1,
-    borderRadius: 22,
+    gap: spacing.sm,
     height: 52,
     justifyContent: "center",
-    width: 68,
+    paddingHorizontal: spacing.md,
+    width: 144,
   },
-  plusWrap: {
-    alignItems: "center",
-    justifyContent: "center",
+  floatingChoiceLabel: {
+    color: "#FFFFFF",
+    fontSize: 17,
+    fontWeight: "500",
   },
-  addButton: {
+  floatingActionsRow: {
     alignItems: "center",
-    borderRadius: 18,
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  floatingIconButton: {
+    alignItems: "center",
+    borderRadius: 14,
     height: 52,
     justifyContent: "center",
-    width: 68,
-  },
-  addButtonLabel: {
-    color: colors.primaryForeground,
-    fontSize: 34,
-    fontWeight: "300",
-    lineHeight: 34,
-  },
-  plusLabel: {
-    fontSize: 30,
-    fontWeight: "300",
-    lineHeight: 30,
+    width: 52,
   },
   invalidState: {
     alignItems: "center",

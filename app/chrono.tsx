@@ -7,6 +7,7 @@ import {
   Alert,
   Animated,
   Easing,
+  Image,
   PanResponder,
   Pressable,
   StyleSheet,
@@ -19,6 +20,7 @@ import { ChronoProgressRing } from "../components/chrono/ChronoProgressRing";
 import { FinishedWorkoutView } from "../components/chrono/FinishedWorkoutView";
 import { StepTimelineSheet } from "../components/chrono/StepTimelineSheet";
 import { BackButton } from "../components/navigation/BackButton";
+import { getExerciseById, getExerciseName } from "../features/exercises";
 import { formatDurationFromSeconds, useProgramsStore } from "../features/programs";
 import {
   addWatchCommandListener,
@@ -316,7 +318,10 @@ export default function ChronoScreen() {
       : isRunning
         ? "running"
         : "paused";
-  const currentStepLabel = activeStep ? (activeStep.type === "walk" ? "Walk" : "Run") : "Run";
+  const activeExercise = activeStep ? getExerciseById(activeStep.type) : undefined;
+  const currentStepLabel = activeStep
+    ? activeExercise?.nom ?? (activeStep.type === "walk" ? "Walk" : "Run")
+    : "Run";
   const secondaryLabel = hasFinished
     ? "Workout complete"
     : `Step ${Math.min(currentStepIndex + 1, course?.steps.length ?? 1)}/${course?.steps.length ?? 1}`;
@@ -338,7 +343,8 @@ export default function ChronoScreen() {
   const shouldRenderWorkoutContent = (!hasFinished && !isLaunchInterludeVisible) || isFinishTransitioning;
   const shouldWarnBeforeLeaving =
     !hasFinished && (hasStarted || isCountdownActive || isLaunchAnimating || isLaunchInterludeVisible);
-  const stepIconName = activeStep?.type === "walk" ? "walk" : "run-fast";
+  const fallbackStepIconName = activeStep?.type === "walk" ? "walk" : "run-fast";
+  const stepIconName = activeExercise?.id ?? fallbackStepIconName;
   const previousStepLabelRef = useRef(currentStepLabel);
   const previousStepIconRef = useRef(stepIconName);
   const previousFooterHintRef = useRef(footerHint);
@@ -587,7 +593,10 @@ export default function ChronoScreen() {
       programName: program.name,
       progressPercent: progressPercent,
       remainingSeconds,
-      steps: course.steps,
+      steps: course.steps.map((step) => ({
+        ...step,
+        label: getExerciseName(step.type),
+      })),
       stepDurationSeconds: activeStep.durationSeconds,
       stepLabel: currentStepLabel,
       stepType: activeStep.type,
@@ -1053,11 +1062,18 @@ export default function ChronoScreen() {
                               transform: [{ translateY: stepIconTranslate }],
                             }}
                           >
-                            <MaterialCommunityIcons
-                              color={palette.textMuted}
-                              name={stepIconName}
-                              size={42}
-                            />
+                            {activeExercise ? (
+                              <Image
+                                source={activeExercise.iconSource}
+                                style={[styles.stepHeaderIcon, { tintColor: palette.textMuted }]}
+                              />
+                            ) : (
+                              <MaterialCommunityIcons
+                                color={palette.textMuted}
+                                name={fallbackStepIconName}
+                                size={42}
+                              />
+                            )}
                           </Animated.View>
                           <Animated.Text
                             style={[
@@ -1344,8 +1360,12 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 30,
     fontWeight: "500",
-    letterSpacing: -0.8,
     textAlign: "center",
+  },
+  stepHeaderIcon: {
+    height: 46,
+    resizeMode: "contain",
+    width: 58,
   },
   countdownWrap: {
     alignItems: "center",

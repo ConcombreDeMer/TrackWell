@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Image, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { CourseActionsMenu } from "../components/course/CourseActionsMenu";
+import { getExerciseById } from "../features/exercises";
 import {
   Course,
   Program,
@@ -551,12 +552,17 @@ function groupCourseSteps(steps: Course["steps"]): CourseStepGroup[] {
 
 function CourseStepRow({ step }: { step: Course["steps"][number] }) {
   const palette = useThemePalette();
+  const exercise = getExerciseById(step.type);
   const iconName = step.type === "walk" ? "walk-outline" : "flash-outline";
-  const label = step.type === "walk" ? "walk" : "run";
+  const label = exercise?.nom ?? (step.type === "walk" ? "walk" : "run");
 
   return (
     <View style={styles.stepRow}>
-      <Ionicons color={palette.text} name={iconName} size={32} />
+      {exercise ? (
+        <Image source={exercise.iconSource} style={[styles.stepIcon, { tintColor: palette.text }]} />
+      ) : (
+        <Ionicons color={palette.text} name={iconName} size={32} />
+      )}
       <Text style={[styles.stepLabel, { color: palette.text }]}>
         {formatDurationFromSeconds(step.durationSeconds)} - {label}
       </Text>
@@ -744,6 +750,11 @@ const styles = StyleSheet.create({
   stepLabel: {
     fontSize: 17,
     fontWeight: "600",
+  },
+  stepIcon: {
+    height: 34,
+    resizeMode: "contain",
+    width: 34,
   },
   connector: {
     borderRadius: radius.pill,

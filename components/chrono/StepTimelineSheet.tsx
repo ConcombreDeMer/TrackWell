@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { BottomSheet, Host } from "@expo/ui/swift-ui";
 import {
   Dimensions,
+  Image,
   Modal,
   Platform,
   Pressable,
@@ -11,6 +12,7 @@ import {
   View,
 } from "react-native";
 
+import { getExerciseById } from "../../features/exercises";
 import { Step, formatDurationFromSeconds } from "../../features/programs";
 import { colors, radius, spacing, useThemePalette } from "../../theme";
 import { SquircleView } from "../../ui/Squircle";
@@ -121,7 +123,8 @@ function StepTimelineContent({
       >
         {stepsToRender.map(({ index, step }) => {
           const isCurrent = index === currentStepIndex;
-          const label = step.type === "walk" ? "Walk" : "Run";
+          const exercise = getExerciseById(step.type);
+          const label = exercise?.nom ?? (step.type === "walk" ? "Walk" : "Run");
           const iconName = step.type === "walk" ? "walk-outline" : "flash-outline";
 
           return (
@@ -136,11 +139,21 @@ function StepTimelineContent({
             >
               <View style={styles.stepHead}>
                 <View style={styles.stepTitleRow}>
-                  <Ionicons
-                    color={isCurrent ? palette.primaryForeground : palette.text}
-                    name={iconName}
-                    size={18}
-                  />
+                  {exercise ? (
+                    <Image
+                      source={exercise.iconSource}
+                      style={[
+                        styles.stepIcon,
+                        { tintColor: isCurrent ? palette.primaryForeground : palette.text },
+                      ]}
+                    />
+                  ) : (
+                    <Ionicons
+                      color={isCurrent ? palette.primaryForeground : palette.text}
+                      name={iconName}
+                      size={18}
+                    />
+                  )}
                   <Text
                     style={[
                       styles.stepLabel,
@@ -258,6 +271,11 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   stepLabel: { fontSize: 18, fontWeight: "700" },
+  stepIcon: {
+    height: 22,
+    resizeMode: "contain",
+    width: 22,
+  },
   stepLabelCurrent: {},
   stepIndex: { fontSize: 13, fontWeight: "700" },
   stepIndexCurrent: {},

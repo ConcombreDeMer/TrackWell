@@ -1,0 +1,53 @@
+{
+  "haut_du_corps": [
+    { "id": "pompes", "nom": "Pompes", "niveau": "débutant", "icone": "pompes", "iconPath": "exos-icons/01-pompes.png" },
+    { "id": "pompes-inclinees", "nom": "Pompes inclinées", "niveau": "débutant", "icone": "pompes-inclinees", "iconPath": "exos-icons/11-pompes-inclinees.png" },
+    { "id": "pompes-declinees", "nom": "Pompes déclinées", "niveau": "intermédiaire", "icone": "pompes-declinees", "iconPath": "exos-icons/12-pompes-declinees.png" },
+    { "id": "dips", "nom": "Dips", "niveau": "intermédiaire", "icone": "dips", "iconPath": "exos-icons/10-dips.png" },
+    { "id": "pike-push-ups", "nom": "Pike push-ups", "niveau": "intermédiaire", "icone": "pike-push-ups", "iconPath": "exos-icons/13-pike-push-ups.png" },
+    { "id": "planche-vers-pompe", "nom": "Planche vers pompe", "niveau": "intermédiaire", "icone": "planche-vers-pompe", "iconPath": "exos-icons/37-planche-vers-pompe.png" }
+  ],
+  "dos_tirage": [
+    { "id": "superman", "nom": "Superman", "niveau": "débutant", "icone": "superman", "iconPath": "exos-icons/15-superman.png" },
+    { "id": "bear-crawl", "nom": "Bear crawl", "niveau": "intermédiaire", "icone": "bear-crawl", "iconPath": "exos-icons/32-bear-crawl.png" },
+    { "id": "handstand-au-mur", "nom": "Handstand au mur", "niveau": "avancé", "icone": "handstand-au-mur", "iconPath": "exos-icons/39-handstand-au-mur.png" },
+    { "id": "tractions", "nom": "Tractions", "niveau": "avancé", "icone": "tractions", "iconPath": "exos-icons/09-tractions.png" }
+  ],
+  "jambes_fessiers": [
+    { "id": "squats", "nom": "Squats", "niveau": "débutant", "icone": "squats", "iconPath": "exos-icons/02-squats.png" },
+    { "id": "fentes", "nom": "Fentes", "niveau": "débutant", "icone": "fentes", "iconPath": "exos-icons/03-fentes.png" },
+    { "id": "step-up", "nom": "Step-up", "niveau": "débutant", "icone": "step-up", "iconPath": "exos-icons/20-step-up.png" },
+    { "id": "pont-fessier", "nom": "Pont fessier", "niveau": "débutant", "icone": "pont-fessier", "iconPath": "exos-icons/16-pont-fessier.png" },
+    { "id": "chaise-murale", "nom": "Chaise murale", "niveau": "débutant", "icone": "chaise-murale", "iconPath": "exos-icons/18-chaise-murale.png" },
+    { "id": "montees-sur-pointes", "nom": "Montées sur pointes", "niveau": "débutant", "icone": "montees-sur-pointes", "iconPath": "exos-icons/19-montees-sur-pointes.png" },
+    { "id": "pistol-squat", "nom": "Pistol squat", "niveau": "avancé", "icone": "pistol-squat", "iconPath": "exos-icons/17-pistol-squat.png" }
+  ],
+  "abdos_gainage": [
+    { "id": "gainage-planche", "nom": "Gainage planche", "niveau": "débutant", "icone": "gainage-planche", "iconPath": "exos-icons/04-gainage-planche.png" },
+    { "id": "gainage-lateral", "nom": "Gainage latéral", "niveau": "débutant", "icone": "gainage-lateral", "iconPath": "exos-icons/05-gainage-lateral.png" },
+    { "id": "crunchs", "nom": "Crunchs", "niveau": "débutant", "icone": "crunchs", "iconPath": "exos-icons/29-crunchs.png" },
+    { "id": "gainage-tap-epaules", "nom": "Gainage tap épaules", "niveau": "intermédiaire", "icone": "gainage-tap-epaules", "iconPath": "exos-icons/31-gainage-tap-epaules.png" },
+    { "id": "gainage-lateral-avec-crunch", "nom": "Gainage latéral avec crunch", "niveau": "intermédiaire", "icone": "gainage-lateral-avec-crunch", "iconPath": "exos-icons/38-gainage-lateral-avec-crunch.png" },
+    { "id": "hollow-hold", "nom": "Hollow hold", "niveau": "intermédiaire", "icone": "hollow-hold", "iconPath": "exos-icons/14-hollow-hold.png" },
+    { "id": "crunchs-inverses", "nom": "Crunchs inversés", "niveau": "intermédiaire", "icone": "crunchs-inverses", "iconPath": "exos-icons/30-crunchs-inverses.png" },
+    { "id": "abdos-bicyclette", "nom": "Abdos bicyclette", "niveau": "intermédiaire", "icone": "abdos-bicyclette", "iconPath": "exos-icons/28-abdos-bicyclette.png" },
+    { "id": "leve-de-jambes", "nom": "Levé de jambes", "niveau": "intermédiaire", "icone": "leve-de-jambes", "iconPath": "exos-icons/25-leve-de-jambes.png" },
+    { "id": "battements-de-jambes", "nom": "Battements de jambes", "niveau": "intermédiaire", "icone": "battements-de-jambes", "iconPath": "exos-icons/27-battements-de-jambes.png" }
+  ],
+  "cardio_explosivite": [
+    { "id": "jumping-jacks", "nom": "Jumping jacks", "niveau": "débutant", "icone": "jumping-jacks", "iconPath": "exos-icons/08-jumping-jacks.png" },
+    { "id": "montees-de-genoux", "nom": "Montées de genoux", "niveau": "débutant", "icone": "montees-de-genoux", "iconPath": "exos-icons/24-montees-de-genoux.png" },
+    { "id": "burpees", "nom": "Burpees", "niveau": "intermédiaire", "icone": "burpees", "iconPath": "exos-icons/07-burpees.png" },
+    { "id": "mountain-climbers", "nom": "Mountain climbers", "niveau": "intermédiaire", "icone": "mountain-climbers", "iconPath": "exos-icons/06-mountain-climbers.png" },
+    { "id": "sauts-squat", "nom": "Sauts squat", "niveau": "intermédiaire", "icone": "sauts-squat", "iconPath": "exos-icons/22-sauts-squat.png" },
+    { "id": "sauts-groupes", "nom": "Sauts groupés", "niveau": "intermédiaire", "icone": "sauts-groupes", "iconPath": "exos-icons/23-sauts-groupes.png" },
+    { "id": "sauts-sur-box", "nom": "Sauts sur box", "niveau": "intermédiaire", "icone": "sauts-sur-box", "iconPath": "exos-icons/21-sauts-sur-box.png" }
+  ],
+  "mobilite_coordination": [
+    { "id": "inchworm", "nom": "Inchworm", "niveau": "débutant", "icone": "inchworm", "iconPath": "exos-icons/34-inchworm.png" },
+    { "id": "down-dog", "nom": "Down dog", "niveau": "débutant", "icone": "down-dog", "iconPath": "exos-icons/35-down-dog.png" },
+    { "id": "cobra", "nom": "Cobra", "niveau": "débutant", "icone": "cobra", "iconPath": "exos-icons/36-cobra.png" },
+    { "id": "crab-walk", "nom": "Crab walk", "niveau": "intermédiaire", "icone": "crab-walk", "iconPath": "exos-icons/33-crab-walk.png" },
+    { "id": "leve-de-genoux-suspendu", "nom": "Levé de genoux suspendu", "niveau": "avancé", "icone": "leve-de-genoux-suspendu", "iconPath": "exos-icons/26-leve-de-genoux-suspendu.png" }
+  ]
+}

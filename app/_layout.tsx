@@ -88,6 +88,14 @@ function RootNavigator() {
             options={{ title: "Create Course", headerShown: false }}
           />
           <Stack.Screen
+            name="exercise-picker"
+            options={{
+              animation: "slide_from_bottom",
+              headerShown: false,
+              presentation: "modal",
+            }}
+          />
+          <Stack.Screen
             name="chrono"
             options={{ title: "Chrono", headerBackButtonMenuEnabled: false, headerShown: false }}
           />

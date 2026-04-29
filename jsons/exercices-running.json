@@ -1,0 +1,52 @@
+{
+  "endurance_recuperation": [
+    { "id": "marche-lente", "nom": "Marche lente", "niveau": "débutant", "icone": "running-marche-lente", "iconPath": "exos-icons/running/01-marche-lente.png" },
+    { "id": "marche-rapide", "nom": "Marche rapide", "niveau": "débutant", "icone": "running-marche-rapide", "iconPath": "exos-icons/running/02-marche-rapide.png" },
+    { "id": "footing-leger", "nom": "Footing léger", "niveau": "débutant", "icone": "running-footing-leger", "iconPath": "exos-icons/running/03-footing-leger.png" },
+    { "id": "jogging-recuperation", "nom": "Jogging récupération", "niveau": "débutant", "icone": "running-jogging-recuperation", "iconPath": "exos-icons/running/04-jogging-recuperation.png" },
+    { "id": "respiration-controlee", "nom": "Respiration contrôlée", "niveau": "débutant", "icone": "running-respiration-controlee", "iconPath": "exos-icons/running/05-respiration-controlee.png" },
+    { "id": "recuperation-active", "nom": "Récupération active", "niveau": "débutant", "icone": "running-recuperation-active", "iconPath": "exos-icons/running/27-recuperation-active.png" },
+    { "id": "course-en-respiration-controlee", "nom": "Course en respiration contrôlée", "niveau": "intermédiaire", "icone": "running-course-en-respiration-controlee", "iconPath": "exos-icons/running/28-course-en-respiration-controlee.png" },
+    { "id": "retour-au-calme", "nom": "Retour au calme", "niveau": "débutant", "icone": "running-retour-au-calme", "iconPath": "exos-icons/running/40-retour-au-calme.png" }
+  ],
+  "allure_cardio": [
+    { "id": "course-moderee", "nom": "Course modérée", "niveau": "intermédiaire", "icone": "running-course-moderee", "iconPath": "exos-icons/running/06-course-moderee.png" },
+    { "id": "tempo-run", "nom": "Tempo run", "niveau": "intermédiaire", "icone": "running-tempo-run", "iconPath": "exos-icons/running/07-tempo-run.png" },
+    { "id": "progressif", "nom": "Progressif", "niveau": "intermédiaire", "icone": "running-progressif", "iconPath": "exos-icons/running/08-progressif.png" },
+    { "id": "fartlek", "nom": "Fartlek", "niveau": "intermédiaire", "icone": "running-fartlek", "iconPath": "exos-icons/running/09-fartlek.png" },
+    { "id": "montee-douce", "nom": "Montée douce", "niveau": "intermédiaire", "icone": "running-montee-douce", "iconPath": "exos-icons/running/10-montee-douce.png" },
+    { "id": "run-tempo-soutenu", "nom": "Run tempo soutenu", "niveau": "intermédiaire", "icone": "running-run-tempo-soutenu", "iconPath": "exos-icons/running/29-run-tempo-soutenu.png" },
+    { "id": "footing-progressif", "nom": "Footing progressif", "niveau": "intermédiaire", "icone": "running-footing-progressif", "iconPath": "exos-icons/running/30-footing-progressif.png" },
+    { "id": "course-en-cote", "nom": "Course en côte", "niveau": "intermédiaire", "icone": "running-course-en-cote", "iconPath": "exos-icons/running/31-course-en-cote.png" },
+    { "id": "course-en-descente", "nom": "Course en descente", "niveau": "intermédiaire", "icone": "running-course-en-descente", "iconPath": "exos-icons/running/32-course-en-descente.png" }
+  ],
+  "vitesse_explosivite": [
+    { "id": "sprint", "nom": "Sprint", "niveau": "avancé", "icone": "running-sprint", "iconPath": "exos-icons/running/11-sprint.png" },
+    { "id": "acceleration-progressive", "nom": "Accélération progressive", "niveau": "avancé", "icone": "running-acceleration-progressive", "iconPath": "exos-icons/running/12-acceleration-progressive.png" },
+    { "id": "intervalles-rapides", "nom": "Intervalles rapides", "niveau": "avancé", "icone": "running-intervalles-rapides", "iconPath": "exos-icons/running/13-intervalles-rapides.png" },
+    { "id": "sprints-en-cote", "nom": "Sprints en côte", "niveau": "avancé", "icone": "running-sprints-en-cote", "iconPath": "exos-icons/running/14-sprints-en-cote.png" },
+    { "id": "relances", "nom": "Relances", "niveau": "avancé", "icone": "running-relances", "iconPath": "exos-icons/running/15-relances.png" },
+    { "id": "ouverture-de-foulee", "nom": "Ouverture de foulée", "niveau": "intermédiaire", "icone": "running-ouverture-de-foulee", "iconPath": "exos-icons/running/35-ouverture-de-foulee.png" },
+    { "id": "acceleration-finale", "nom": "Accélération finale", "niveau": "avancé", "icone": "running-acceleration-finale", "iconPath": "exos-icons/running/39-acceleration-finale.png" }
+  ],
+  "technique_coordination": [
+    { "id": "montees-de-genoux", "nom": "Montées de genoux", "niveau": "intermédiaire", "icone": "running-montees-de-genoux", "iconPath": "exos-icons/running/16-montees-de-genoux.png" },
+    { "id": "talons-fesses", "nom": "Talons-fesses", "niveau": "intermédiaire", "icone": "running-talons-fesses", "iconPath": "exos-icons/running/17-talons-fesses.png" },
+    { "id": "pas-chasses", "nom": "Pas chassés", "niveau": "intermédiaire", "icone": "running-pas-chasses", "iconPath": "exos-icons/running/18-pas-chasses.png" },
+    { "id": "skipping", "nom": "Skipping", "niveau": "intermédiaire", "icone": "running-skipping", "iconPath": "exos-icons/running/19-skipping.png" },
+    { "id": "course-jambes-tendues", "nom": "Course jambes tendues", "niveau": "intermédiaire", "icone": "running-course-jambes-tendues", "iconPath": "exos-icons/running/20-course-jambes-tendues.png" },
+    { "id": "bondissements", "nom": "Bondissements", "niveau": "intermédiaire", "icone": "running-bondissements", "iconPath": "exos-icons/running/21-bondissements.png" },
+    { "id": "petits-pas-rapides", "nom": "Petits pas rapides", "niveau": "intermédiaire", "icone": "running-petits-pas-rapides", "iconPath": "exos-icons/running/33-petits-pas-rapides.png" },
+    { "id": "course-arriere", "nom": "Course arrière", "niveau": "intermédiaire", "icone": "running-course-arriere", "iconPath": "exos-icons/running/34-course-arriere.png" },
+    { "id": "sprints-lateraux", "nom": "Sprints latéraux", "niveau": "avancé", "icone": "running-sprints-lateraux", "iconPath": "exos-icons/running/36-sprints-lateraux.png" },
+    { "id": "pas-croises", "nom": "Pas croisés", "niveau": "intermédiaire", "icone": "running-pas-croises", "iconPath": "exos-icons/running/37-pas-croises.png" },
+    { "id": "foulees-bondissantes", "nom": "Foulées bondissantes", "niveau": "intermédiaire", "icone": "running-foulees-bondissantes", "iconPath": "exos-icons/running/38-foulees-bondissantes.png" }
+  ],
+  "renforcement_dynamique": [
+    { "id": "fentes-marchees", "nom": "Fentes marchées", "niveau": "intermédiaire", "icone": "running-fentes-marchees", "iconPath": "exos-icons/running/22-fentes-marchees.png" },
+    { "id": "squats-dynamiques", "nom": "Squats dynamiques", "niveau": "intermédiaire", "icone": "running-squats-dynamiques", "iconPath": "exos-icons/running/23-squats-dynamiques.png" },
+    { "id": "gainage-dynamique", "nom": "Gainage dynamique", "niveau": "intermédiaire", "icone": "running-gainage-dynamique", "iconPath": "exos-icons/running/24-gainage-dynamique.png" },
+    { "id": "pas-de-l-ours", "nom": "Pas de l’ours", "niveau": "avancé", "icone": "running-pas-de-l-ours", "iconPath": "exos-icons/running/25-pas-de-l-ours.png" },
+    { "id": "montee-de-genoux-lente", "nom": "Montée de genoux lente", "niveau": "intermédiaire", "icone": "running-montee-de-genoux-lente", "iconPath": "exos-icons/running/26-montee-de-genoux-lente.png" }
+  ]
+}

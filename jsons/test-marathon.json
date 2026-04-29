@@ -1,0 +1,130 @@
+{
+  "exportedAt": "2026-04-22T12:00:00.000Z",
+  "program": {
+    "description": "Programme de reprise progressive sur 2 semaines pour coureur en retour après syndrome de l’essuie-glace. Reprise prudente en alternance marche/course, sans vitesse ni côtes.",
+    "name": "Reprise ITBS - 2 semaines",
+    "numberOfWeeks": 2,
+    "weeks": [
+      {
+        "index": 1,
+        "courses": [
+          {
+            "dayOfWeek": 0,
+            "name": "Semaine 1 - Course 1",
+            "steps": [
+              { "durationSeconds": 300, "type": "walk" },
+              { "durationSeconds": 60, "type": "run" },
+              { "durationSeconds": 90, "type": "walk" },
+              { "durationSeconds": 60, "type": "run" },
+              { "durationSeconds": 90, "type": "walk" },
+              { "durationSeconds": 60, "type": "run" },
+              { "durationSeconds": 90, "type": "walk" },
+              { "durationSeconds": 60, "type": "run" },
+              { "durationSeconds": 90, "type": "walk" },
+              { "durationSeconds": 60, "type": "run" },
+              { "durationSeconds": 90, "type": "walk" },
+              { "durationSeconds": 60, "type": "run" },
+              { "durationSeconds": 300, "type": "walk" }
+            ]
+          },
+          {
+            "dayOfWeek": 2,
+            "name": "Semaine 1 - Course 2",
+            "steps": [
+              { "durationSeconds": 300, "type": "walk" },
+              { "durationSeconds": 90, "type": "run" },
+              { "durationSeconds": 60, "type": "walk" },
+              { "durationSeconds": 90, "type": "run" },
+              { "durationSeconds": 60, "type": "walk" },
+              { "durationSeconds": 90, "type": "run" },
+              { "durationSeconds": 75, "type": "walk" },
+              { "durationSeconds": 90, "type": "run" },
+              { "durationSeconds": 60, "type": "walk" },
+              { "durationSeconds": 90, "type": "run" },
+              { "durationSeconds": 60, "type": "walk" },
+              { "durationSeconds": 90, "type": "run" },
+              { "durationSeconds": 300, "type": "walk" }
+            ]
+          },
+          {
+            "dayOfWeek": 5,
+            "name": "Semaine 1 - Course 3",
+            "steps": [
+              { "durationSeconds": 300, "type": "walk" },
+              { "durationSeconds": 120, "type": "run" },
+              { "durationSeconds": 75, "type": "walk" },
+              { "durationSeconds": 120, "type": "run" },
+              { "durationSeconds": 75, "type": "walk" },
+              { "durationSeconds": 120, "type": "run" },
+              { "durationSeconds": 60, "type": "walk" },
+              { "durationSeconds": 120, "type": "run" },
+              { "durationSeconds": 75, "type": "walk" },
+              { "durationSeconds": 120, "type": "run" },
+              { "durationSeconds": 300, "type": "walk" }
+            ]
+          }
+        ]
+      },
+      {
+        "index": 2,
+        "courses": [
+          {
+            "dayOfWeek": 0,
+            "name": "Semaine 2 - Course 1",
+            "steps": [
+              { "durationSeconds": 300, "type": "walk" },
+              { "durationSeconds": 120, "type": "run" },
+              { "durationSeconds": 60, "type": "walk" },
+              { "durationSeconds": 120, "type": "run" },
+              { "durationSeconds": 60, "type": "walk" },
+              { "durationSeconds": 120, "type": "run" },
+              { "durationSeconds": 60, "type": "walk" },
+              { "durationSeconds": 120, "type": "run" },
+              { "durationSeconds": 60, "type": "walk" },
+              { "durationSeconds": 120, "type": "run" },
+              { "durationSeconds": 60, "type": "walk" },
+              { "durationSeconds": 120, "type": "run" },
+              { "durationSeconds": 300, "type": "walk" }
+            ]
+          },
+          {
+            "dayOfWeek": 2,
+            "name": "Semaine 2 - Course 2",
+            "steps": [
+              { "durationSeconds": 300, "type": "walk" },
+              { "durationSeconds": 180, "type": "run" },
+              { "durationSeconds": 60, "type": "walk" },
+              { "durationSeconds": 180, "type": "run" },
+              { "durationSeconds": 60, "type": "walk" },
+              { "durationSeconds": 180, "type": "run" },
+              { "durationSeconds": 60, "type": "walk" },
+              { "durationSeconds": 180, "type": "run" },
+              { "durationSeconds": 60, "type": "walk" },
+              { "durationSeconds": 180, "type": "run" },
+              { "durationSeconds": 300, "type": "walk" }
+            ]
+          },
+          {
+            "dayOfWeek": 5,
+            "name": "Semaine 2 - Course 3",
+            "steps": [
+              { "durationSeconds": 300, "type": "walk" },
+              { "durationSeconds": 120, "type": "run" },
+              { "durationSeconds": 60, "type": "walk" },
+              { "durationSeconds": 180, "type": "run" },
+              { "durationSeconds": 60, "type": "walk" },
+              { "durationSeconds": 240, "type": "run" },
+              { "durationSeconds": 60, "type": "walk" },
+              { "durationSeconds": 180, "type": "run" },
+              { "durationSeconds": 60, "type": "walk" },
+              { "durationSeconds": 120, "type": "run" },
+              { "durationSeconds": 300, "type": "walk" }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "type": "trackwell-program",
+  "version": 1
+}

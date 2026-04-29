@@ -221,7 +221,7 @@ function isSharedProgramStep(value: unknown): value is SharedProgramStep {
   }
 
   return (
-    (value.type === "walk" || value.type === "run") &&
+    typeof value.type === "string" &&
     typeof value.durationSeconds === "number" &&
     Number.isFinite(value.durationSeconds) &&
     value.durationSeconds > 0

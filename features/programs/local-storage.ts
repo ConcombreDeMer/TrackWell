@@ -146,7 +146,7 @@ function isStep(value: unknown) {
 
   return (
     typeof value.id === "string" &&
-    (value.type === "walk" || value.type === "run") &&
+    typeof value.type === "string" &&
     typeof value.durationSeconds === "number"
   );
 }

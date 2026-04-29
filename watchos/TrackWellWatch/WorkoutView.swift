@@ -182,10 +182,11 @@ private struct WorkoutStepsView: View {
 
         ForEach(Array(snapshot.steps.enumerated()), id: \.element.id) { index, step in
           let isCurrent = index == snapshot.currentStepIndex
+          let stepLabel = step.label ?? (step.type == "walk" ? "Walk" : "Run")
 
           VStack(alignment: .leading, spacing: 6) {
             HStack {
-              Label(step.type == "walk" ? "Walk" : "Run", systemImage: step.type == "walk" ? "figure.walk" : "bolt")
+              Label(stepLabel, systemImage: step.type == "walk" ? "figure.walk" : "bolt")
                 .font(.system(size: 14, weight: .semibold))
               Spacer()
               Text("Step \(index + 1)")

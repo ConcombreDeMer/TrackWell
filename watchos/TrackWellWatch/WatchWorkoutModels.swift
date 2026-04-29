@@ -3,6 +3,7 @@ import Foundation
 struct WatchStepSnapshot: Codable, Identifiable {
   let durationSeconds: Int
   let id: String
+  let label: String?
   let type: String
 }
 
