@@ -33,20 +33,7 @@ struct WatchHomeView: View {
         }
         .padding(.horizontal, 4)
 
-        NavigationLink(value: WatchRoute.programs) {
-          WatchHomeActionCard(title: "Programmes")
-        }
-        .buttonStyle(.plain)
-
-        NavigationLink(value: WatchRoute.history) {
-          WatchHomeActionCard(title: "Historique")
-        }
-        .buttonStyle(.plain)
-
-        NavigationLink(value: WatchRoute.settings) {
-          WatchHomeActionCard(title: "Settings")
-        }
-        .buttonStyle(.plain)
+        WatchHomeActionScroller()
 
         Spacer(minLength: 0)
 
@@ -75,6 +62,41 @@ struct WatchHomeView: View {
       .padding(.horizontal, 10)
       .padding(.top, 6)
       .padding(.bottom, 6)
+    }
+  }
+}
+
+private struct WatchHomeActionScroller: View {
+  @EnvironmentObject private var themeSettings: WatchThemeSettings
+
+  private let actions: [(title: String, route: WatchRoute)] = [
+    ("Programmes", .programs),
+    ("Historique", .history),
+    ("Settings", .settings),
+  ]
+
+  var body: some View {
+    let palette = themeSettings.palette
+
+    HStack(spacing: 8) {
+      ScrollView(.vertical, showsIndicators: false) {
+        LazyVStack(spacing: 8) {
+          ForEach(actions, id: \.title) { action in
+            NavigationLink(value: action.route) {
+              WatchHomeActionCard(title: action.title)
+            }
+            .buttonStyle(.plain)
+          }
+        }
+        .scrollTargetLayout()
+      }
+      .frame(height: 42)
+      .scrollTargetBehavior(.viewAligned)
+
+      Image(systemName: "chevron.up.chevron.down")
+        .font(.system(size: 13, weight: .semibold))
+        .foregroundStyle(palette.secondaryText)
+        .frame(width: 16, height: 42)
     }
   }
 }
