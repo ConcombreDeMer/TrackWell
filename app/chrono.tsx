@@ -1,5 +1,6 @@
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import * as Location from "expo-location";
 import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { usePreventRemove } from "@react-navigation/native";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -21,7 +22,7 @@ import { FinishedWorkoutView } from "../components/chrono/FinishedWorkoutView";
 import { StepTimelineSheet } from "../components/chrono/StepTimelineSheet";
 import { BackButton } from "../components/navigation/BackButton";
 import { getExerciseById, getExerciseName } from "../features/exercises";
-import { formatDurationFromSeconds, useProgramsStore } from "../features/programs";
+import { StepTarget, formatDurationFromSeconds, useProgramsStore } from "../features/programs";
 import {
   addWatchCommandListener,
   buildWatchHistorySnapshot,
@@ -33,6 +34,10 @@ import { colors, radius, spacing, useThemePalette, useThemePreferences } from ".
 import { SquircleButton } from "../ui/Squircle";
 
 type WorkoutVisualState = "idle" | "running" | "paused" | "finished";
+type DistanceCoordinate = {
+  latitude: number;
+  longitude: number;
+};
 
 export default function ChronoScreen() {
   const router = useRouter();
@@ -72,6 +77,8 @@ export default function ChronoScreen() {
   const [isFinishTransitioning, setIsFinishTransitioning] = useState(false);
   const [isLaunchAnimating, setIsLaunchAnimating] = useState(false);
   const [isLaunchInterludeVisible, setIsLaunchInterludeVisible] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [stepDistanceMeters, setStepDistanceMeters] = useState(0);
   const previousCourseIdRef = useRef<string | undefined>(undefined);
   const allowNavigationRef = useRef(false);
   const hasCompletedRef = useRef(false);
@@ -97,8 +104,12 @@ export default function ChronoScreen() {
   const finishTransitionScale = useRef(new Animated.Value(1)).current;
   const finishedScreenOpacity = useRef(new Animated.Value(0)).current;
   const finishedScreenScale = useRef(new Animated.Value(0.9)).current;
+  const lastLocationRef = useRef<DistanceCoordinate | null>(null);
+  const locationSubscriptionRef = useRef<Location.LocationSubscription | null>(null);
+  const hasCompletedDistanceStepRef = useRef(false);
 
   const currentStep = course?.steps[currentStepIndex];
+  const currentStepTarget = currentStep ? getStepTarget(currentStep) : undefined;
   const advanceToNextStep = useCallback(
     (reason: "auto" | "skip" = "auto") => {
       if (!course) {
@@ -110,6 +121,10 @@ export default function ChronoScreen() {
       if (nextStep) {
         setCurrentStepIndex((index) => index + 1);
         setRemainingSeconds(nextStep.durationSeconds);
+        setStepDistanceMeters(0);
+        setLocationError(null);
+        lastLocationRef.current = null;
+        hasCompletedDistanceStepRef.current = false;
 
         if (reason === "skip") {
           triggerSkipHaptic();
@@ -118,6 +133,9 @@ export default function ChronoScreen() {
       }
 
       setRemainingSeconds(0);
+      setStepDistanceMeters(0);
+      lastLocationRef.current = null;
+      hasCompletedDistanceStepRef.current = false;
       setIsRunning(false);
       setIsStepSheetOpen(false);
       setHasFinished(true);
@@ -165,7 +183,14 @@ export default function ChronoScreen() {
         triggerSkipHaptic();
       }
     },
-    [course, currentStepIndex],
+    [
+      course,
+      currentStepIndex,
+      finishTransitionOpacity,
+      finishTransitionScale,
+      finishedScreenOpacity,
+      finishedScreenScale,
+    ],
   );
 
   useEffect(() => {
@@ -203,7 +228,20 @@ export default function ChronoScreen() {
     finishTransitionScale.setValue(1);
     finishedScreenOpacity.setValue(0);
     finishedScreenScale.setValue(0.9);
-  }, [course]);
+  }, [
+    chronoInterfaceOpacity,
+    chronoInterfaceScale,
+    course,
+    finishTransitionOpacity,
+    finishTransitionScale,
+    finishedScreenOpacity,
+    finishedScreenScale,
+    hasFinished,
+    launchContentOpacity,
+    launchScreenOpacity,
+    playFadeOpacity,
+    playPressScale,
+  ]);
 
   useEffect(() => {
     if (!course || autoStart !== "true" || course.progress || hasStarted || isCountdownActive || hasFinished) {
@@ -237,7 +275,7 @@ export default function ChronoScreen() {
   ]);
 
   useEffect(() => {
-    if (!course || !isRunning || hasFinished) {
+    if (!course || !isRunning || hasFinished || currentStepTarget?.unit !== "duration") {
       return;
     }
 
@@ -251,7 +289,122 @@ export default function ChronoScreen() {
     }, 1000);
 
     return () => clearTimeout(timeoutId);
-  }, [advanceToNextStep, course, hasFinished, isRunning, remainingSeconds]);
+  }, [advanceToNextStep, course, currentStepTarget?.unit, hasFinished, isRunning, remainingSeconds]);
+
+  useEffect(() => {
+    setStepDistanceMeters(0);
+    setLocationError(null);
+    lastLocationRef.current = null;
+    hasCompletedDistanceStepRef.current = false;
+  }, [currentStep?.id]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    function stopLocationTracking() {
+      locationSubscriptionRef.current?.remove();
+      locationSubscriptionRef.current = null;
+      lastLocationRef.current = null;
+    }
+
+    async function startLocationTracking() {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+
+      if (cancelled) {
+        return;
+      }
+
+      if (status !== "granted") {
+        setLocationError("Autorisation GPS refusee");
+        setIsRunning(false);
+        return;
+      }
+
+      setLocationError(null);
+      const subscription = await Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.BestForNavigation,
+          distanceInterval: 2,
+          timeInterval: 1000,
+        },
+        (location) => {
+          const nextCoordinate = {
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+          };
+          const previousCoordinate = lastLocationRef.current;
+
+          lastLocationRef.current = nextCoordinate;
+
+          if (!previousCoordinate || (location.coords.accuracy ?? 0) > 50) {
+            return;
+          }
+
+          const segmentMeters = getDistanceMeters(previousCoordinate, nextCoordinate);
+
+          if (segmentMeters <= 0 || segmentMeters > 80) {
+            return;
+          }
+
+          setStepDistanceMeters((current) => {
+            const nextDistanceMeters = current + segmentMeters;
+            const targetMeters = (currentStepTarget?.value ?? 0) * 1000;
+
+            if (
+              targetMeters > 0 &&
+              nextDistanceMeters >= targetMeters &&
+              !hasCompletedDistanceStepRef.current
+            ) {
+              hasCompletedDistanceStepRef.current = true;
+              advanceToNextStep("auto");
+            }
+
+            return nextDistanceMeters;
+          });
+        },
+      );
+
+      if (cancelled) {
+        subscription.remove();
+        return;
+      }
+
+      locationSubscriptionRef.current = subscription;
+    }
+
+    if (
+      !currentStep ||
+      currentStepTarget?.unit !== "kilometers" ||
+      !isRunning ||
+      hasFinished ||
+      isCountdownActive
+    ) {
+      stopLocationTracking();
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    startLocationTracking().catch(() => {
+      if (!cancelled) {
+        setLocationError("GPS indisponible");
+        setIsRunning(false);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      stopLocationTracking();
+    };
+  }, [
+    advanceToNextStep,
+    currentStep,
+    currentStepTarget?.unit,
+    currentStepTarget?.value,
+    hasFinished,
+    isCountdownActive,
+    isRunning,
+  ]);
 
   useEffect(() => {
     if (!hasFinished || !program || !week || !course || hasCompletedRef.current) {
@@ -305,12 +458,16 @@ export default function ChronoScreen() {
       .slice(0, currentStepIndex)
       .reduce((total, step) => total + step.durationSeconds, 0) ?? 0;
   const activeStep = currentStep;
+  const activeStepTarget = currentStepTarget;
   const completedCourseSeconds = activeStep
     ? elapsedCourseSeconds + Math.max(activeStep.durationSeconds - remainingSeconds, 0)
     : elapsedCourseSeconds;
-  const progressPercent = activeStep?.durationSeconds
-    ? ((activeStep.durationSeconds - remainingSeconds) / activeStep.durationSeconds) * 100
-    : 0;
+  const progressPercent = getStepProgressPercent({
+    activeStep,
+    distanceMeters: stepDistanceMeters,
+    remainingSeconds,
+    target: activeStepTarget,
+  });
   const visualState: WorkoutVisualState = hasFinished
     ? "finished"
     : !hasStarted
@@ -333,6 +490,10 @@ export default function ChronoScreen() {
         ? "Tap to play"
         : "Tap to play";
   const overallDurationLabel = formatClock(completedCourseSeconds);
+  const primaryProgressLabel = activeStepTarget
+    ? formatChronoTargetProgress(activeStepTarget, remainingSeconds, stepDistanceMeters)
+    : formatClock(remainingSeconds);
+  const activeStepTargetLabel = activeStepTarget ? formatStepTarget(activeStepTarget) : "";
   const canSkip = !hasFinished && Boolean(course?.steps[currentStepIndex + 1] || currentStep);
   const isWorkoutActive = hasStarted || isCountdownActive;
   const isIdleLaunchState = !hasStarted && !isCountdownActive;
@@ -340,6 +501,8 @@ export default function ChronoScreen() {
   const shouldShowWorkoutScreen = !hasFinished && !shouldShowLaunchScreen && !isLaunchInterludeVisible;
   const shouldShowCountdownOnly = shouldShowWorkoutScreen && isCountdownActive;
   const shouldShowChronoInterface = shouldShowWorkoutScreen && !isCountdownActive;
+  const shouldShowValidateRepsButton =
+    shouldShowChronoInterface && activeStepTarget?.unit === "repetitions";
   const shouldRenderWorkoutContent = (!hasFinished && !isLaunchInterludeVisible) || isFinishTransitioning;
   const shouldWarnBeforeLeaving =
     !hasFinished && (hasStarted || isCountdownActive || isLaunchAnimating || isLaunchInterludeVisible);
@@ -592,11 +755,15 @@ export default function ChronoScreen() {
       programId: program.id,
       programName: program.name,
       progressPercent: progressPercent,
+      activeStepTarget,
+      activeStepTargetLabel,
+      primaryProgressLabel,
       remainingSeconds,
       steps: course.steps.map((step) => ({
         ...step,
         label: getExerciseName(step.type),
       })),
+      stepDistanceMeters,
       stepDurationSeconds: activeStep.durationSeconds,
       stepLabel: currentStepLabel,
       stepType: activeStep.type,
@@ -609,6 +776,8 @@ export default function ChronoScreen() {
     };
   }, [
     activeStep,
+    activeStepTarget,
+    activeStepTargetLabel,
     completedCourseSeconds,
     countdownValue,
     currentStepIndex,
@@ -620,8 +789,11 @@ export default function ChronoScreen() {
     remainingSeconds,
     course,
     historySnapshot,
+    progressPercent,
+    primaryProgressLabel,
     program,
     programsSnapshot,
+    stepDistanceMeters,
     week,
   ]);
 
@@ -847,6 +1019,15 @@ export default function ChronoScreen() {
     advanceToNextStep("skip");
   }, [advanceToNextStep, hasFinished]);
 
+  const handleValidateRepetitions = useCallback(() => {
+    if (hasFinished || currentStepTarget?.unit !== "repetitions") {
+      return;
+    }
+
+    triggerSkipHaptic();
+    advanceToNextStep("auto");
+  }, [advanceToNextStep, currentStepTarget?.unit, hasFinished]);
+
   useEffect(() => {
     return addWatchCommandListener((command) => {
       if (command.courseId && command.courseId !== course?.id) {
@@ -888,6 +1069,11 @@ export default function ChronoScreen() {
             });
           }
           break;
+        case "validateRepetitions":
+          if (hasStarted && !isCountdownActive && !hasFinished) {
+            handleValidateRepetitions();
+          }
+          break;
       }
     });
   }, [
@@ -896,6 +1082,7 @@ export default function ChronoScreen() {
     currentStepIndex,
     handlePrimarySurfacePress,
     handleSkipStep,
+    handleValidateRepetitions,
     hasFinished,
     hasStarted,
     isCountdownActive,
@@ -1092,7 +1279,7 @@ export default function ChronoScreen() {
                           <ChronoProgressRing
                             progressPercent={clamp(progressPercent, 0, 100)}
                             secondaryLabel={secondaryLabel}
-                            timeLabel={formatClock(remainingSeconds)}
+                            timeLabel={primaryProgressLabel}
                             visualState={visualState === "finished" ? "running" : visualState}
                           />
                         </View>
@@ -1115,7 +1302,7 @@ export default function ChronoScreen() {
                           </Animated.Text>
                           {isWorkoutActive ? (
                             <Text style={styles.elapsedLabel}>
-                              {activeStep ? formatDurationFromSeconds(activeStep.durationSeconds) : ""}
+                              {locationError ?? activeStepTargetLabel}
                             </Text>
                           ) : null}
                         </Animated.View>
@@ -1162,6 +1349,23 @@ export default function ChronoScreen() {
                       <Ionicons color={palette.text} name="stop" size={22} />
                     </View>
                   </SquircleButton>
+
+                  {shouldShowValidateRepsButton ? (
+                    <SquircleButton
+                      onPress={handleValidateRepetitions}
+                      style={[
+                        styles.validateButton,
+                        {
+                          backgroundColor: palette.primaryGradientStart,
+                          borderColor: palette.primaryGradientStart,
+                        },
+                      ]}
+                    >
+                      <Text style={[styles.validateButtonLabel, { color: palette.primaryForeground }]}>
+                        Valider
+                      </Text>
+                    </SquircleButton>
+                  ) : null}
 
                   <SquircleButton
                     disabled={!canSkip}
@@ -1264,6 +1468,97 @@ function formatClock(totalSeconds: number) {
   const seconds = safeSeconds % 60;
 
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}
+
+function getStepTarget(step: { durationSeconds: number; target?: StepTarget }) {
+  return step.target ?? { unit: "duration", value: step.durationSeconds };
+}
+
+function getStepProgressPercent({
+  activeStep,
+  distanceMeters,
+  remainingSeconds,
+  target,
+}: {
+  activeStep?: { durationSeconds: number };
+  distanceMeters: number;
+  remainingSeconds: number;
+  target?: StepTarget;
+}) {
+  if (!activeStep || !target) {
+    return 0;
+  }
+
+  if (target.unit === "kilometers") {
+    return target.value > 0 ? (distanceMeters / (target.value * 1000)) * 100 : 0;
+  }
+
+  if (target.unit === "repetitions") {
+    return 0;
+  }
+
+  return activeStep.durationSeconds
+    ? ((activeStep.durationSeconds - remainingSeconds) / activeStep.durationSeconds) * 100
+    : 0;
+}
+
+function formatChronoTargetProgress(
+  target: StepTarget,
+  remainingSeconds: number,
+  distanceMeters: number,
+) {
+  if (target.unit === "duration") {
+    return formatClock(remainingSeconds);
+  }
+
+  if (target.unit === "repetitions") {
+    const repetitions = Math.round(target.value);
+
+    return `${repetitions} ${repetitions === 1 ? "rep" : "reps"}`;
+  }
+
+  const completedKilometers = Math.min(distanceMeters / 1000, target.value);
+
+  return `${formatDecimalValue(completedKilometers)} / ${formatDecimalValue(target.value)} km`;
+}
+
+function formatStepTarget(target: StepTarget) {
+  if (target.unit === "duration") {
+    return formatDurationFromSeconds(target.value);
+  }
+
+  if (target.unit === "repetitions") {
+    const repetitions = Math.round(target.value);
+
+    return `${repetitions} ${repetitions === 1 ? "rep" : "reps"}`;
+  }
+
+  return `${formatDecimalValue(target.value)} km`;
+}
+
+function getDistanceMeters(first: DistanceCoordinate, second: DistanceCoordinate) {
+  const earthRadiusMeters = 6371000;
+  const latitudeDelta = degreesToRadians(second.latitude - first.latitude);
+  const longitudeDelta = degreesToRadians(second.longitude - first.longitude);
+  const firstLatitude = degreesToRadians(first.latitude);
+  const secondLatitude = degreesToRadians(second.latitude);
+  const haversine =
+    Math.sin(latitudeDelta / 2) ** 2 +
+    Math.cos(firstLatitude) * Math.cos(secondLatitude) * Math.sin(longitudeDelta / 2) ** 2;
+
+  return 2 * earthRadiusMeters * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+}
+
+function degreesToRadians(value: number) {
+  return (value * Math.PI) / 180;
+}
+
+function formatDecimalValue(value: number) {
+  const roundedValue = Math.round(value * 100) / 100;
+
+  return Number.isInteger(roundedValue)
+    ? String(roundedValue)
+    : String(roundedValue).replace(/0+$/, "").replace(/\.$/, "");
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -1465,6 +1760,19 @@ const styles = StyleSheet.create({
     height: 64,
     justifyContent: "center",
     width: 120,
+  },
+  validateButton: {
+    alignItems: "center",
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    height: 64,
+    justifyContent: "center",
+    paddingHorizontal: spacing.lg,
+    minWidth: 132,
+  },
+  validateButtonLabel: {
+    fontSize: 18,
+    fontWeight: "700",
   },
   actionButtonOverlay: {
     backgroundColor: "rgba(108,108,108,0.28)",

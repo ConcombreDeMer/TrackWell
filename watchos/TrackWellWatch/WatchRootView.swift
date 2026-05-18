@@ -8,19 +8,6 @@ private enum WatchRoute: Hashable {
   case raceDetail
 }
 
-private struct WatchProgram: Identifiable {
-  let id: String
-  let name: String
-  let progressLabel: String
-  let isSelected: Bool
-}
-
-private struct WatchHistoryItem: Identifiable {
-  let id: String
-  let title: String
-  let subtitle: String
-}
-
 struct WatchRootView: View {
   var body: some View {
     NavigationStack {
@@ -44,10 +31,20 @@ struct WatchRootView: View {
 }
 
 private struct WatchHomeView: View {
+  @StateObject private var connectivity = WatchConnectivityProvider.shared
   @EnvironmentObject private var themeSettings: WatchThemeSettings
 
   var body: some View {
     let palette = themeSettings.palette
+    let snapshot = connectivity.snapshot
+    let selectedProgramName =
+      snapshot?.programs?.first(where: { $0.isSelected })?.name
+      ?? (snapshot?.programName.isEmpty == false ? snapshot?.programName : nil)
+      ?? "TrackWell"
+    let nextRaceLabel =
+      snapshot?.context == "preview" || snapshot?.context == "workout"
+      ? snapshot?.courseName
+      : nil
 
     ZStack {
       palette.background
@@ -59,9 +56,10 @@ private struct WatchHomeView: View {
             .font(.system(size: 9, weight: .regular))
             .foregroundStyle(palette.secondaryText)
 
-          Text("Marathon")
+          Text(selectedProgramName)
             .font(.system(size: 16, weight: .bold))
             .foregroundStyle(palette.primaryText)
+            .lineLimit(2)
         }
         .padding(.horizontal, 4)
 
@@ -88,7 +86,7 @@ private struct WatchHomeView: View {
               .font(.system(size: 20, weight: .semibold))
               .foregroundStyle(palette.buttonForeground)
 
-            Text("Next race")
+            Text(nextRaceLabel ?? "Aucune course")
               .font(.system(size: 15, weight: .bold))
               .foregroundStyle(palette.buttonForeground)
               .lineLimit(1)
@@ -158,43 +156,54 @@ private struct WatchChronoView: View {
 }
 
 private struct WatchProgramsView: View {
-  private let programs = [
-    WatchProgram(id: "marathon", name: "Marathon", progressLabel: "12/37", isSelected: true),
-    WatchProgram(id: "semi", name: "Semi", progressLabel: "12/12", isSelected: false),
-    WatchProgram(id: "remise-en-forme", name: "Remise en forme", progressLabel: "25/25", isSelected: false),
-  ]
+  @StateObject private var connectivity = WatchConnectivityProvider.shared
 
   var body: some View {
+    let programs = connectivity.snapshot?.programs ?? []
+
     WatchScreenShell(title: "Programmes") {
-      VStack(spacing: 10) {
-        ForEach(programs) { program in
-          WatchProgramCard(program: program)
+      if programs.isEmpty {
+        WatchEmptyState(
+          systemName: "bookmark",
+          title: "Aucun programme",
+          message: "Ouvrez TrackWell sur iPhone pour synchroniser."
+        )
+      } else {
+        VStack(spacing: 10) {
+          ForEach(programs) { program in
+            WatchProgramCard(program: program)
+          }
         }
+        .frame(maxWidth: .infinity, alignment: .top)
       }
-      .frame(maxWidth: .infinity, alignment: .top)
     }
   }
 }
 
 private struct WatchHistoryView: View {
-  private let items = [
-    WatchHistoryItem(id: "course-12", title: "Course 12", subtitle: "de Marathon"),
-    WatchHistoryItem(id: "course-11", title: "Course 11", subtitle: "de Marathon"),
-    WatchHistoryItem(id: "course-10", title: "Course 10", subtitle: "de Marathon"),
-    WatchHistoryItem(id: "course-9", title: "Course 9", subtitle: "de Marathon"),
-  ]
+  @StateObject private var connectivity = WatchConnectivityProvider.shared
 
   var body: some View {
+    let items = connectivity.snapshot?.history ?? []
+
     WatchScreenShell(title: "Historique") {
-      VStack(spacing: 10) {
-        ForEach(items) { item in
-          NavigationLink(value: WatchRoute.raceDetail) {
-            WatchHistoryCard(item: item)
+      if items.isEmpty {
+        WatchEmptyState(
+          systemName: "clock.arrow.circlepath",
+          title: "Aucun historique",
+          message: "Les courses terminees ou partielles apparaitront ici."
+        )
+      } else {
+        VStack(spacing: 10) {
+          ForEach(items) { item in
+            NavigationLink(value: WatchRoute.raceDetail) {
+              WatchHistoryCard(item: item)
+            }
+            .buttonStyle(.plain)
           }
-          .buttonStyle(.plain)
         }
+        .frame(maxWidth: .infinity, alignment: .top)
       }
-      .frame(maxWidth: .infinity, alignment: .top)
     }
   }
 }
@@ -309,10 +318,11 @@ private struct WatchScreenShell<Content: View>: View {
 private struct WatchProgramCard: View {
   @EnvironmentObject private var themeSettings: WatchThemeSettings
 
-  let program: WatchProgram
+  let program: WatchProgramSummarySnapshot
 
   var body: some View {
     let palette = themeSettings.palette
+    let progressLabel = "\(program.completedCourses)/\(program.totalCourses)"
 
     HStack(spacing: 10) {
       VStack(alignment: .leading, spacing: 2) {
@@ -321,7 +331,7 @@ private struct WatchProgramCard: View {
           .foregroundStyle(palette.primaryText)
           .lineLimit(2)
 
-        Text(program.progressLabel)
+        Text(progressLabel)
           .font(.system(size: 10, weight: .regular))
           .foregroundStyle(palette.secondaryText)
       }
@@ -342,19 +352,20 @@ private struct WatchProgramCard: View {
 private struct WatchHistoryCard: View {
   @EnvironmentObject private var themeSettings: WatchThemeSettings
 
-  let item: WatchHistoryItem
+  let item: WatchHistoryEntrySnapshot
 
   var body: some View {
     let palette = themeSettings.palette
+    let statusLabel = item.status == "done" ? "Terminee" : "Partielle"
 
     HStack(spacing: 10) {
       VStack(alignment: .leading, spacing: 2) {
-        Text(item.title)
+        Text(item.courseName)
           .font(.system(size: 16, weight: .medium))
           .foregroundStyle(palette.primaryText)
           .lineLimit(1)
 
-        Text(item.subtitle)
+        Text("\(item.programName) - Semaine \(item.weekIndex) - \(statusLabel)")
           .font(.system(size: 10, weight: .regular))
           .foregroundStyle(palette.secondaryText)
           .lineLimit(1)
@@ -366,6 +377,39 @@ private struct WatchHistoryCard: View {
     }
     .padding(.horizontal, 14)
     .frame(maxWidth: .infinity, minHeight: 62, alignment: .leading)
+    .background(palette.cardBackground)
+    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+  }
+}
+
+private struct WatchEmptyState: View {
+  @EnvironmentObject private var themeSettings: WatchThemeSettings
+
+  let systemName: String
+  let title: String
+  let message: String
+
+  var body: some View {
+    let palette = themeSettings.palette
+
+    VStack(spacing: 8) {
+      Image(systemName: systemName)
+        .font(.system(size: 26, weight: .semibold))
+        .foregroundStyle(palette.primaryText)
+
+      Text(title)
+        .font(.system(size: 15, weight: .semibold))
+        .foregroundStyle(palette.primaryText)
+        .multilineTextAlignment(.center)
+
+      Text(message)
+        .font(.system(size: 10, weight: .regular))
+        .foregroundStyle(palette.secondaryText)
+        .multilineTextAlignment(.center)
+    }
+    .padding(.horizontal, 14)
+    .padding(.vertical, 16)
+    .frame(maxWidth: .infinity)
     .background(palette.cardBackground)
     .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
   }

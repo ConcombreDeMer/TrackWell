@@ -4,6 +4,7 @@ struct WatchStepSnapshot: Codable, Identifiable {
   let durationSeconds: Int
   let id: String
   let label: String?
+  let target: WatchStepTargetSnapshot?
   let type: String
 }
 
@@ -12,6 +13,32 @@ enum WatchCommandAction: String, Codable {
   case togglePlayback
   case skipStep
   case resetWorkout
+  case saveProgress
+  case validateRepetitions
+}
+
+struct WatchStepTargetSnapshot: Codable {
+  let unit: String
+  let value: Double
+}
+
+struct WatchProgramSummarySnapshot: Codable, Identifiable {
+  let id: String
+  let name: String
+  let completedCourses: Int
+  let totalCourses: Int
+  let isSelected: Bool
+}
+
+struct WatchHistoryEntrySnapshot: Codable, Identifiable {
+  let id: String
+  let courseId: String
+  let courseName: String
+  let programId: String
+  let programName: String
+  let weekIndex: Int
+  let status: String
+  let updatedAt: String?
 }
 
 struct WatchWorkoutSnapshot: Codable {
@@ -28,12 +55,18 @@ struct WatchWorkoutSnapshot: Codable {
   let progressPercent: Double
   let remainingSeconds: Int
   let steps: [WatchStepSnapshot]
+  let activeStepTarget: WatchStepTargetSnapshot?
+  let activeStepTargetLabel: String?
+  let primaryProgressLabel: String?
+  let stepDistanceMeters: Double?
   let stepDurationSeconds: Int
   let stepLabel: String
   let stepType: String
   let totalDurationSeconds: Int
   let totalSteps: Int
   let weekIndex: Int
+  let programs: [WatchProgramSummarySnapshot]?
+  let history: [WatchHistoryEntrySnapshot]?
 }
 
 struct WatchCommandPayload: Codable {

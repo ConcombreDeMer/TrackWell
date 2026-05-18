@@ -1,18 +1,27 @@
 import Foundation
+import React
 
 @objc(WatchSyncModule)
 final class WatchSyncModule: RCTEventEmitter {
   private var hasListeners = false
+  private var pendingCommand: [String: Any]?
 
   override init() {
     super.init()
 
     WatchSyncManager.shared.onCommand = { [weak self] payload in
-      guard let self, self.hasListeners else {
-        return
-      }
+      DispatchQueue.main.async {
+        guard let self else {
+          return
+        }
 
-      self.sendEvent(withName: "watchCommand", body: payload)
+        guard self.hasListeners else {
+          self.pendingCommand = payload
+          return
+        }
+
+        self.sendEvent(withName: "watchCommand", body: payload)
+      }
     }
   }
 
@@ -26,6 +35,11 @@ final class WatchSyncModule: RCTEventEmitter {
 
   override func startObserving() {
     hasListeners = true
+
+    if let pendingCommand {
+      sendEvent(withName: "watchCommand", body: pendingCommand)
+      self.pendingCommand = nil
+    }
   }
 
   override func stopObserving() {

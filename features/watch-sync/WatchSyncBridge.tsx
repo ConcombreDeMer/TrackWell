@@ -35,6 +35,7 @@ export function WatchSyncBridge() {
         programId: "",
         programName: "",
         progressPercent: 0,
+        stepDistanceMeters: 0,
         remainingSeconds: 0,
         state: "scheduled",
         steps: [],
@@ -61,6 +62,7 @@ export function WatchSyncBridge() {
         programId: selectedProgram.id,
         programName: selectedProgram.name,
         progressPercent: 0,
+        stepDistanceMeters: 0,
         remainingSeconds: 0,
         state: "scheduled",
         steps: [],
@@ -93,6 +95,7 @@ export function WatchSyncBridge() {
       programId: selectedProgram.id,
       programName: selectedProgram.name,
       progressPercent: 0,
+      primaryProgressLabel: formatWatchDuration(totalDurationSeconds),
       remainingSeconds: totalDurationSeconds,
       state: "scheduled",
       steps: nextCourse.course.steps.map((step) => ({
@@ -102,6 +105,7 @@ export function WatchSyncBridge() {
       stepDurationSeconds: firstStep.durationSeconds,
       stepLabel: nextCourse.course.name,
       stepType: firstStep.type,
+      stepDistanceMeters: 0,
       totalDurationSeconds,
       totalSteps: nextCourse.course.steps.length,
       updatedAt: new Date().toISOString(),
@@ -142,4 +146,11 @@ export function WatchSyncBridge() {
   }, [nextCourse, pathname, router, selectedProgram]);
 
   return null;
+}
+
+function formatWatchDuration(durationSeconds: number) {
+  const minutes = Math.floor(durationSeconds / 60);
+  const seconds = durationSeconds % 60;
+
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }

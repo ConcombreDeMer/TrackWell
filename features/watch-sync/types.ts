@@ -13,7 +13,13 @@ export type WatchCommandAction =
   | "togglePlayback"
   | "skipStep"
   | "resetWorkout"
-  | "saveProgress";
+  | "saveProgress"
+  | "validateRepetitions";
+
+export type WatchStepTargetSnapshot = {
+  unit: "duration" | "repetitions" | "kilometers";
+  value: number;
+};
 
 export type WatchProgramSummarySnapshot = {
   id: string;
@@ -51,8 +57,13 @@ export type WatchWorkoutSnapshot = {
     durationSeconds: number;
     id: string;
     label: string;
+    target?: WatchStepTargetSnapshot;
     type: StepType;
   }>;
+  activeStepTarget?: WatchStepTargetSnapshot;
+  activeStepTargetLabel?: string;
+  primaryProgressLabel?: string;
+  stepDistanceMeters: number;
   stepDurationSeconds: number;
   stepLabel: string;
   stepType: StepType;
