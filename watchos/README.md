@@ -7,7 +7,8 @@ Current scope:
 - display the current step and remaining time
 - send `start`, `play/pause`, `skip`, and `reset` commands back to the iPhone
 
-Before it can run in Xcode, these files still need to be added to a real `watchOS` target:
-- create a new `watchOS App` target in Xcode
-- add the files from `watchos/TrackWellWatch`
-- keep the iPhone app target as the `WatchConnectivity` host
+Source layout:
+- `App`: app entry point, root navigation, and routes
+- `Features`: screens grouped by watch feature
+- `Shared`: reusable SwiftUI building blocks
+- `Models`, `Services`, and `Theme`: data contracts, sync, and appearance settings

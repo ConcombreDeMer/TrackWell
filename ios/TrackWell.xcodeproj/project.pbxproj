@@ -15,6 +15,21 @@
 		0925C2412FBB1AFD00FCC271 /* WatchRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0925C23A2FBB1AFD00FCC271 /* WatchRootView.swift */; };
 		0925C2422FBB1AFD00FCC271 /* WatchConnectivityProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0925C2392FBB1AFD00FCC271 /* WatchConnectivityProvider.swift */; };
 		0925C2432FBB1AFD00FCC271 /* TrackWellWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0925C2382FBB1AFD00FCC271 /* TrackWellWatchApp.swift */; };
+		A00000000000000000000101 /* WatchRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000201 /* WatchRoute.swift */; };
+		A00000000000000000000102 /* WatchHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000202 /* WatchHomeView.swift */; };
+		A00000000000000000000103 /* WatchChronoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000203 /* WatchChronoView.swift */; };
+		A00000000000000000000104 /* WorkoutStepsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000204 /* WorkoutStepsView.swift */; };
+		A00000000000000000000105 /* WatchProgramsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000205 /* WatchProgramsView.swift */; };
+		A00000000000000000000106 /* WatchProgramCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000206 /* WatchProgramCard.swift */; };
+		A00000000000000000000107 /* WatchHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000207 /* WatchHistoryView.swift */; };
+		A00000000000000000000108 /* WatchHistoryCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000208 /* WatchHistoryCard.swift */; };
+		A00000000000000000000109 /* WatchRaceDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000209 /* WatchRaceDetailView.swift */; };
+		A0000000000000000000010A /* WatchSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000020A /* WatchSettingsView.swift */; };
+		A0000000000000000000010B /* WatchScreenShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000020B /* WatchScreenShell.swift */; };
+		A0000000000000000000010C /* WatchEmptyState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000020C /* WatchEmptyState.swift */; };
+		A0000000000000000000010D /* WatchIconBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000020D /* WatchIconBadge.swift */; };
+		A0000000000000000000010E /* WatchEllipsisBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000020E /* WatchEllipsisBadge.swift */; };
+		A0000000000000000000010F /* WatchPlaceholderScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000020F /* WatchPlaceholderScreen.swift */; };
 		0925C2442FBB2A1000FCC271 /* WatchSyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0925C2462FBB2A1000FCC271 /* WatchSyncManager.swift */; };
 		0925C2452FBB2A1000FCC271 /* WatchSyncModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0925C2472FBB2A1000FCC271 /* WatchSyncModule.swift */; };
 		0925C2482FBB2B9000FCC271 /* WatchSyncModuleBridge.m in Sources */ = {isa = PBXBuildFile; fileRef = 0925C2492FBB2B9000FCC271 /* WatchSyncModuleBridge.m */; };
@@ -54,12 +69,27 @@
 /* Begin PBXFileReference section */
 		0925C2222FBB18EC00FCC271 /* TrackWellWatch Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "TrackWellWatch Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		0925C2312FBB1A9B00FCC271 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		0925C2382FBB1AFD00FCC271 /* TrackWellWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TrackWellWatchApp.swift; path = ../watchos/TrackWellWatch/TrackWellWatchApp.swift; sourceTree = SOURCE_ROOT; };
-		0925C2392FBB1AFD00FCC271 /* WatchConnectivityProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WatchConnectivityProvider.swift; path = ../watchos/TrackWellWatch/WatchConnectivityProvider.swift; sourceTree = SOURCE_ROOT; };
-		0925C23A2FBB1AFD00FCC271 /* WatchRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WatchRootView.swift; path = ../watchos/TrackWellWatch/WatchRootView.swift; sourceTree = SOURCE_ROOT; };
-		0925C23B2FBB1AFD00FCC271 /* WatchThemeSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WatchThemeSettings.swift; path = ../watchos/TrackWellWatch/WatchThemeSettings.swift; sourceTree = SOURCE_ROOT; };
-		0925C23C2FBB1AFD00FCC271 /* WatchWorkoutModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WatchWorkoutModels.swift; path = ../watchos/TrackWellWatch/WatchWorkoutModels.swift; sourceTree = SOURCE_ROOT; };
-		0925C23D2FBB1AFD00FCC271 /* WorkoutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WorkoutView.swift; path = ../watchos/TrackWellWatch/WorkoutView.swift; sourceTree = SOURCE_ROOT; };
+		0925C2382FBB1AFD00FCC271 /* TrackWellWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TrackWellWatchApp.swift; path = ../watchos/TrackWellWatch/App/TrackWellWatchApp.swift; sourceTree = SOURCE_ROOT; };
+		0925C2392FBB1AFD00FCC271 /* WatchConnectivityProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WatchConnectivityProvider.swift; path = ../watchos/TrackWellWatch/Services/WatchConnectivityProvider.swift; sourceTree = SOURCE_ROOT; };
+		0925C23A2FBB1AFD00FCC271 /* WatchRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WatchRootView.swift; path = ../watchos/TrackWellWatch/App/WatchRootView.swift; sourceTree = SOURCE_ROOT; };
+		0925C23B2FBB1AFD00FCC271 /* WatchThemeSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WatchThemeSettings.swift; path = ../watchos/TrackWellWatch/Theme/WatchThemeSettings.swift; sourceTree = SOURCE_ROOT; };
+		0925C23C2FBB1AFD00FCC271 /* WatchWorkoutModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WatchWorkoutModels.swift; path = ../watchos/TrackWellWatch/Models/WatchWorkoutModels.swift; sourceTree = SOURCE_ROOT; };
+		0925C23D2FBB1AFD00FCC271 /* WorkoutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WorkoutView.swift; path = ../watchos/TrackWellWatch/Features/Workout/WorkoutView.swift; sourceTree = SOURCE_ROOT; };
+		A00000000000000000000201 /* WatchRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WatchRoute.swift; path = ../watchos/TrackWellWatch/App/WatchRoute.swift; sourceTree = SOURCE_ROOT; };
+		A00000000000000000000202 /* WatchHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WatchHomeView.swift; path = ../watchos/TrackWellWatch/Features/Home/WatchHomeView.swift; sourceTree = SOURCE_ROOT; };
+		A00000000000000000000203 /* WatchChronoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WatchChronoView.swift; path = ../watchos/TrackWellWatch/Features/Workout/WatchChronoView.swift; sourceTree = SOURCE_ROOT; };
+		A00000000000000000000204 /* WorkoutStepsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WorkoutStepsView.swift; path = ../watchos/TrackWellWatch/Features/Workout/WorkoutStepsView.swift; sourceTree = SOURCE_ROOT; };
+		A00000000000000000000205 /* WatchProgramsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WatchProgramsView.swift; path = ../watchos/TrackWellWatch/Features/Programs/WatchProgramsView.swift; sourceTree = SOURCE_ROOT; };
+		A00000000000000000000206 /* WatchProgramCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WatchProgramCard.swift; path = ../watchos/TrackWellWatch/Features/Programs/WatchProgramCard.swift; sourceTree = SOURCE_ROOT; };
+		A00000000000000000000207 /* WatchHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WatchHistoryView.swift; path = ../watchos/TrackWellWatch/Features/History/WatchHistoryView.swift; sourceTree = SOURCE_ROOT; };
+		A00000000000000000000208 /* WatchHistoryCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WatchHistoryCard.swift; path = ../watchos/TrackWellWatch/Features/History/WatchHistoryCard.swift; sourceTree = SOURCE_ROOT; };
+		A00000000000000000000209 /* WatchRaceDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WatchRaceDetailView.swift; path = ../watchos/TrackWellWatch/Features/History/WatchRaceDetailView.swift; sourceTree = SOURCE_ROOT; };
+		A0000000000000000000020A /* WatchSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WatchSettingsView.swift; path = ../watchos/TrackWellWatch/Features/Settings/WatchSettingsView.swift; sourceTree = SOURCE_ROOT; };
+		A0000000000000000000020B /* WatchScreenShell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WatchScreenShell.swift; path = ../watchos/TrackWellWatch/Shared/WatchScreenShell.swift; sourceTree = SOURCE_ROOT; };
+		A0000000000000000000020C /* WatchEmptyState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WatchEmptyState.swift; path = ../watchos/TrackWellWatch/Shared/WatchEmptyState.swift; sourceTree = SOURCE_ROOT; };
+		A0000000000000000000020D /* WatchIconBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WatchIconBadge.swift; path = ../watchos/TrackWellWatch/Shared/WatchIconBadge.swift; sourceTree = SOURCE_ROOT; };
+		A0000000000000000000020E /* WatchEllipsisBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WatchEllipsisBadge.swift; path = ../watchos/TrackWellWatch/Shared/WatchEllipsisBadge.swift; sourceTree = SOURCE_ROOT; };
+		A0000000000000000000020F /* WatchPlaceholderScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WatchPlaceholderScreen.swift; path = ../watchos/TrackWellWatch/Shared/WatchPlaceholderScreen.swift; sourceTree = SOURCE_ROOT; };
 		0925C2462FBB2A1000FCC271 /* WatchSyncManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchSyncManager.swift; sourceTree = "<group>"; };
 		0925C2472FBB2A1000FCC271 /* WatchSyncModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchSyncModule.swift; sourceTree = "<group>"; };
 		0925C2492FBB2B9000FCC271 /* WatchSyncModuleBridge.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = WatchSyncModuleBridge.m; sourceTree = "<group>"; };
@@ -100,15 +130,118 @@
 		0925C2342FBB1A9B00FCC271 /* TrackWellWatch Watch App */ = {
 			isa = PBXGroup;
 			children = (
-				0925C2382FBB1AFD00FCC271 /* TrackWellWatchApp.swift */,
-				0925C2392FBB1AFD00FCC271 /* WatchConnectivityProvider.swift */,
-				0925C23A2FBB1AFD00FCC271 /* WatchRootView.swift */,
-				0925C23B2FBB1AFD00FCC271 /* WatchThemeSettings.swift */,
-				0925C23C2FBB1AFD00FCC271 /* WatchWorkoutModels.swift */,
-				0925C23D2FBB1AFD00FCC271 /* WorkoutView.swift */,
+				A00000000000000000000301 /* App */,
+				A00000000000000000000302 /* Models */,
+				A00000000000000000000303 /* Services */,
+				A00000000000000000000304 /* Theme */,
+				A00000000000000000000305 /* Features */,
+				A00000000000000000000306 /* Shared */,
 				0925C2312FBB1A9B00FCC271 /* Assets.xcassets */,
 			);
 			path = "TrackWellWatch Watch App";
+			sourceTree = "<group>";
+		};
+		A00000000000000000000301 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				0925C2382FBB1AFD00FCC271 /* TrackWellWatchApp.swift */,
+				0925C23A2FBB1AFD00FCC271 /* WatchRootView.swift */,
+				A00000000000000000000201 /* WatchRoute.swift */,
+			);
+			name = App;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000302 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				0925C23C2FBB1AFD00FCC271 /* WatchWorkoutModels.swift */,
+			);
+			name = Models;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000303 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				0925C2392FBB1AFD00FCC271 /* WatchConnectivityProvider.swift */,
+			);
+			name = Services;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000304 /* Theme */ = {
+			isa = PBXGroup;
+			children = (
+				0925C23B2FBB1AFD00FCC271 /* WatchThemeSettings.swift */,
+			);
+			name = Theme;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000305 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000307 /* Home */,
+				A00000000000000000000308 /* Workout */,
+				A00000000000000000000309 /* Programs */,
+				A0000000000000000000030A /* History */,
+				A0000000000000000000030B /* Settings */,
+			);
+			name = Features;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000306 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				A0000000000000000000020B /* WatchScreenShell.swift */,
+				A0000000000000000000020C /* WatchEmptyState.swift */,
+				A0000000000000000000020D /* WatchIconBadge.swift */,
+				A0000000000000000000020E /* WatchEllipsisBadge.swift */,
+				A0000000000000000000020F /* WatchPlaceholderScreen.swift */,
+			);
+			name = Shared;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000307 /* Home */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000202 /* WatchHomeView.swift */,
+			);
+			name = Home;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000308 /* Workout */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000203 /* WatchChronoView.swift */,
+				0925C23D2FBB1AFD00FCC271 /* WorkoutView.swift */,
+				A00000000000000000000204 /* WorkoutStepsView.swift */,
+			);
+			name = Workout;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000309 /* Programs */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000205 /* WatchProgramsView.swift */,
+				A00000000000000000000206 /* WatchProgramCard.swift */,
+			);
+			name = Programs;
+			sourceTree = "<group>";
+		};
+		A0000000000000000000030A /* History */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000207 /* WatchHistoryView.swift */,
+				A00000000000000000000208 /* WatchHistoryCard.swift */,
+				A00000000000000000000209 /* WatchRaceDetailView.swift */,
+			);
+			name = History;
+			sourceTree = "<group>";
+		};
+		A0000000000000000000030B /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				A0000000000000000000020A /* WatchSettingsView.swift */,
+			);
+			name = Settings;
 			sourceTree = "<group>";
 		};
 		0B03FCFE9593C50571252098 /* ExpoModulesProviders */ = {
@@ -432,12 +565,27 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A00000000000000000000101 /* WatchRoute.swift in Sources */,
 				0925C23E2FBB1AFD00FCC271 /* WatchThemeSettings.swift in Sources */,
 				0925C23F2FBB1AFD00FCC271 /* WatchWorkoutModels.swift in Sources */,
 				0925C2402FBB1AFD00FCC271 /* WorkoutView.swift in Sources */,
 				0925C2412FBB1AFD00FCC271 /* WatchRootView.swift in Sources */,
 				0925C2422FBB1AFD00FCC271 /* WatchConnectivityProvider.swift in Sources */,
 				0925C2432FBB1AFD00FCC271 /* TrackWellWatchApp.swift in Sources */,
+				A00000000000000000000102 /* WatchHomeView.swift in Sources */,
+				A00000000000000000000103 /* WatchChronoView.swift in Sources */,
+				A00000000000000000000104 /* WorkoutStepsView.swift in Sources */,
+				A00000000000000000000105 /* WatchProgramsView.swift in Sources */,
+				A00000000000000000000106 /* WatchProgramCard.swift in Sources */,
+				A00000000000000000000107 /* WatchHistoryView.swift in Sources */,
+				A00000000000000000000108 /* WatchHistoryCard.swift in Sources */,
+				A00000000000000000000109 /* WatchRaceDetailView.swift in Sources */,
+				A0000000000000000000010A /* WatchSettingsView.swift in Sources */,
+				A0000000000000000000010B /* WatchScreenShell.swift in Sources */,
+				A0000000000000000000010C /* WatchEmptyState.swift in Sources */,
+				A0000000000000000000010D /* WatchIconBadge.swift in Sources */,
+				A0000000000000000000010E /* WatchEllipsisBadge.swift in Sources */,
+				A0000000000000000000010F /* WatchPlaceholderScreen.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
