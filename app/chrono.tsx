@@ -84,6 +84,7 @@ export default function ChronoScreen() {
   const hasCompletedRef = useRef(false);
   const hasAnimatedChronoEntranceRef = useRef(false);
   const hasAppliedAutoStartRef = useRef<string | null>(null);
+  const clearedProgressCourseIdRef = useRef<string | null>(null);
   const countdownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pauseBackdropAnim = useRef(new Animated.Value(0)).current;
   const stepLabelTranslate = useRef(new Animated.Value(0)).current;
@@ -200,6 +201,18 @@ export default function ChronoScreen() {
 
     const isSameCourse = previousCourseIdRef.current === course.id;
     previousCourseIdRef.current = course.id;
+
+    if (!isSameCourse) {
+      clearedProgressCourseIdRef.current = null;
+    }
+
+    if (clearedProgressCourseIdRef.current === course.id) {
+      if (course.progress) {
+        return;
+      }
+
+      clearedProgressCourseIdRef.current = null;
+    }
 
     if (isSameCourse && hasFinished) {
       return;
@@ -493,6 +506,9 @@ export default function ChronoScreen() {
   const primaryProgressLabel = activeStepTarget
     ? formatChronoTargetProgress(activeStepTarget, remainingSeconds, stepDistanceMeters)
     : formatClock(remainingSeconds);
+  const primaryMetric = activeStepTarget
+    ? formatChronoPrimaryMetric(activeStepTarget, remainingSeconds, stepDistanceMeters)
+    : { valueLabel: formatClock(remainingSeconds) };
   const activeStepTargetLabel = activeStepTarget ? formatStepTarget(activeStepTarget) : "";
   const canSkip = !hasFinished && Boolean(course?.steps[currentStepIndex + 1] || currentStep);
   const isWorkoutActive = hasStarted || isCountdownActive;
@@ -807,6 +823,11 @@ export default function ChronoScreen() {
         return;
       }
 
+      if (countdownTimerRef.current) {
+        clearTimeout(countdownTimerRef.current);
+        countdownTimerRef.current = null;
+      }
+
       setHasStarted(false);
       setIsCountdownActive(false);
       setCountdownValue(3);
@@ -832,6 +853,8 @@ export default function ChronoScreen() {
       finishedScreenScale.setValue(0.9);
 
       if (clearSavedProgress) {
+        clearedProgressCourseIdRef.current = course.id;
+        hasAppliedAutoStartRef.current = course.id;
         saveCourseProgress(program.id, week.index, course.id, undefined);
         setCourseCompleted(program.id, week.index, course.id, false);
       }
@@ -1050,6 +1073,8 @@ export default function ChronoScreen() {
           break;
         case "resetWorkout":
           resetWorkoutState(true);
+          allowNavigationRef.current = true;
+          router.replace("/");
           break;
         case "saveProgress":
           if (program && week && course) {
@@ -1277,9 +1302,11 @@ export default function ChronoScreen() {
 
                         <View style={styles.chronoBlock}>
                           <ChronoProgressRing
+                            detailLabel={primaryMetric.detailLabel}
                             progressPercent={clamp(progressPercent, 0, 100)}
                             secondaryLabel={secondaryLabel}
-                            timeLabel={primaryProgressLabel}
+                            timeLabel={primaryMetric.valueLabel}
+                            unitLabel={primaryMetric.unitLabel}
                             visualState={visualState === "finished" ? "running" : visualState}
                           />
                         </View>
@@ -1517,9 +1544,34 @@ function formatChronoTargetProgress(
     return `${repetitions} ${repetitions === 1 ? "rep" : "reps"}`;
   }
 
+  return `sur ${formatDecimalValue(target.value)} km`;
+}
+
+function formatChronoPrimaryMetric(
+  target: StepTarget,
+  remainingSeconds: number,
+  distanceMeters: number,
+) {
+  if (target.unit === "duration") {
+    return { valueLabel: formatClock(remainingSeconds) };
+  }
+
+  if (target.unit === "repetitions") {
+    const repetitions = Math.round(target.value);
+
+    return {
+      valueLabel: String(repetitions),
+      unitLabel: repetitions === 1 ? "rep" : "reps",
+    };
+  }
+
   const completedKilometers = Math.min(distanceMeters / 1000, target.value);
 
-  return `${formatDecimalValue(completedKilometers)} / ${formatDecimalValue(target.value)} km`;
+  return {
+    detailLabel: `sur ${formatDecimalValue(target.value)} km`,
+    unitLabel: "km",
+    valueLabel: formatDistanceMetricValue(completedKilometers),
+  };
 }
 
 function formatStepTarget(target: StepTarget) {
@@ -1534,6 +1586,18 @@ function formatStepTarget(target: StepTarget) {
   }
 
   return `${formatDecimalValue(target.value)} km`;
+}
+
+function formatDistanceMetricValue(value: number) {
+  if (value === 0) {
+    return "0.00";
+  }
+
+  if (value < 10) {
+    return value.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
+  }
+
+  return formatDecimalValue(value);
 }
 
 function getDistanceMeters(first: DistanceCoordinate, second: DistanceCoordinate) {

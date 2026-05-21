@@ -1,13 +1,17 @@
 import SwiftUI
 
 struct WatchRootView: View {
+  @State private var path: [WatchRoute] = []
+
   var body: some View {
-    NavigationStack {
+    NavigationStack(path: $path) {
       WatchHomeView()
         .navigationDestination(for: WatchRoute.self) { route in
           switch route {
           case .chrono:
-            WatchChronoView()
+            WatchChronoView {
+              path.removeAll()
+            }
           case .programs:
             WatchProgramsView()
           case .history:

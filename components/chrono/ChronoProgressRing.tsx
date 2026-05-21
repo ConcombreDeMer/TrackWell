@@ -7,16 +7,20 @@ import { useThemePalette, useThemePreferences } from "../../theme";
 type WorkoutVisualState = "idle" | "running" | "paused";
 
 type ChronoProgressRingProps = {
+  detailLabel?: string;
   progressPercent: number;
   secondaryLabel: string;
   timeLabel: string;
+  unitLabel?: string;
   visualState: WorkoutVisualState;
 };
 
 export function ChronoProgressRing({
+  detailLabel,
   progressPercent,
   secondaryLabel,
   timeLabel,
+  unitLabel,
   visualState,
 }: ChronoProgressRingProps) {
   const palette = useThemePalette();
@@ -124,17 +128,41 @@ export function ChronoProgressRing({
                 <View style={[styles.playIcon, { borderLeftColor: palette.text }]} />
               ) : null}
 
-              <Animated.Text
+              <Animated.View
                 style={[
-                  styles.timeLabel,
-                  { color: palette.text },
+                  styles.metricBlock,
                   {
                     transform: [{ translateY: timeTranslateY }, { scale: timeScale }],
                   },
                 ]}
               >
-                {timeLabel}
-              </Animated.Text>
+                <View style={styles.metricRow}>
+                  <Animated.Text
+                    adjustsFontSizeToFit
+                    numberOfLines={1}
+                    style={[styles.timeLabel, { color: palette.text }]}
+                  >
+                    {timeLabel}
+                  </Animated.Text>
+                  {unitLabel ? (
+                    <Animated.Text
+                      adjustsFontSizeToFit
+                      numberOfLines={1}
+                      style={[styles.unitLabel, { color: palette.textMuted }]}
+                    >
+                      {unitLabel}
+                    </Animated.Text>
+                  ) : null}
+                </View>
+                {detailLabel ? (
+                  <Animated.Text
+                    numberOfLines={1}
+                    style={[styles.detailLabel, { color: palette.textMuted }]}
+                  >
+                    {detailLabel}
+                  </Animated.Text>
+                ) : null}
+              </Animated.View>
               <Animated.Text
                 style={[
                   styles.secondaryLabel,
@@ -203,6 +231,28 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     width: 0,
   },
-  timeLabel: { fontSize: 88, fontWeight: "800", letterSpacing: -4.8, lineHeight: 94 },
+  metricBlock: {
+    alignItems: "center",
+    maxWidth: 250,
+  },
+  metricRow: {
+    alignItems: "flex-end",
+    flexDirection: "row",
+    justifyContent: "center",
+    maxWidth: 250,
+  },
+  timeLabel: { fontSize: 88, fontWeight: "800", letterSpacing: -2.4, lineHeight: 94 },
+  unitLabel: {
+    fontSize: 32,
+    fontWeight: "800",
+    lineHeight: 42,
+    marginBottom: 10,
+    marginLeft: 8,
+  },
+  detailLabel: {
+    fontSize: 15,
+    fontWeight: "700",
+    marginTop: -6,
+  },
   secondaryLabel: { fontSize: 20, fontWeight: "500" },
 });

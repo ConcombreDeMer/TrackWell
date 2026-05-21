@@ -184,7 +184,7 @@ function StepTimelineContent({
                   },
                 ]}
               >
-                {formatDurationFromSeconds(step.durationSeconds)}
+                {formatTimelineStepTarget(step)}
               </Text>
 
               {isCurrent ? (
@@ -200,6 +200,30 @@ function StepTimelineContent({
       </ScrollView>
     </SquircleView>
   );
+}
+
+function formatTimelineStepTarget(step: Step) {
+  const target = step.target ?? { unit: "duration", value: step.durationSeconds };
+
+  if (target.unit === "duration") {
+    return formatDurationFromSeconds(target.value);
+  }
+
+  if (target.unit === "repetitions") {
+    const repetitions = Math.round(target.value);
+
+    return `${repetitions} ${repetitions === 1 ? "rep" : "reps"}`;
+  }
+
+  return `${formatTimelineDecimal(target.value)} km`;
+}
+
+function formatTimelineDecimal(value: number) {
+  const roundedValue = Math.round(value * 100) / 100;
+
+  return Number.isInteger(roundedValue)
+    ? String(roundedValue)
+    : String(roundedValue).replace(/0+$/, "").replace(/\.$/, "");
 }
 
 const styles = StyleSheet.create({
