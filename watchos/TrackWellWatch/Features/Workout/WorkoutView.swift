@@ -11,6 +11,8 @@ struct WorkoutView: View {
   }
 
   var body: some View {
+    let shouldShowNativeHeader = connectivity.snapshot?.context == "preview"
+
     Group {
       if let snapshot = connectivity.snapshot {
         WatchWorkoutContent(
@@ -22,7 +24,8 @@ struct WorkoutView: View {
         WatchNoWorkoutView(status: connectivity.debugStatus)
       }
     }
-    .toolbar(.hidden, for: .navigationBar)
+    .navigationTitle("")
+    .toolbar(shouldShowNativeHeader ? .visible : .hidden, for: .navigationBar)
   }
 }
 
