@@ -1,8 +1,10 @@
 import {
+  getCourseDurationSeconds,
   getChronologicalCourses,
   getProgramCompletedCourseCount,
   getProgramCourseCount,
 } from "../programs";
+import { getExerciseName } from "../exercises";
 import type { Program } from "../programs";
 import type {
   WatchHistoryEntrySnapshot,
@@ -56,10 +58,16 @@ export function buildWatchHistorySnapshot(programs: Program[]): WatchHistoryEntr
     .map(({ course, program, updatedAt, weekIndex }) => ({
       courseId: course.id,
       courseName: course.name,
+      feedback: course.feedback,
       id: `${program.id}:${course.id}`,
       programId: program.id,
       programName: program.name,
+      steps: course.steps.map((step) => ({
+        ...step,
+        label: getExerciseName(step.type),
+      })),
       status: course.completed ? "done" : "partial",
+      totalDurationSeconds: getCourseDurationSeconds(course),
       updatedAt,
       weekIndex,
     }));

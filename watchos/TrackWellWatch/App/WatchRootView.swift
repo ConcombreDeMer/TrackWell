@@ -18,8 +18,8 @@ struct WatchRootView: View {
             WatchHistoryView()
           case .settings:
             WatchSettingsView()
-          case .raceDetail:
-            WatchRaceDetailView()
+          case .raceDetail(let historyEntryId):
+            WatchRaceDetailView(historyEntryId: historyEntryId)
           }
         }
     }

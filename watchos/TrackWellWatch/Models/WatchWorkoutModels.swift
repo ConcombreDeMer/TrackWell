@@ -30,14 +30,24 @@ struct WatchProgramSummarySnapshot: Codable, Identifiable {
   let isSelected: Bool
 }
 
+struct WatchCourseFeedbackSnapshot: Codable {
+  let completedAt: String
+  let difficulty: String
+  let pain: String
+  let feeling: String
+}
+
 struct WatchHistoryEntrySnapshot: Codable, Identifiable {
   let id: String
   let courseId: String
   let courseName: String
+  let feedback: WatchCourseFeedbackSnapshot?
   let programId: String
   let programName: String
+  let steps: [WatchStepSnapshot]?
   let weekIndex: Int
   let status: String
+  let totalDurationSeconds: Int?
   let updatedAt: String?
 }
 

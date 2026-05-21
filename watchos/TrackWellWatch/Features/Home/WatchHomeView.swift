@@ -61,7 +61,7 @@ struct WatchHomeView: View {
       }
       .padding(.horizontal, 10)
       .padding(.top, 6)
-      .padding(.bottom, 6)
+       .padding(.bottom, 6)
     }
   }
 }

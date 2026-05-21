@@ -20,6 +20,13 @@ struct WatchHistoryCard: View {
           .font(.system(size: 10, weight: .regular))
           .foregroundStyle(palette.secondaryText)
           .lineLimit(1)
+
+        if let totalDurationSeconds = item.totalDurationSeconds {
+          Text(formatWatchHistoryDuration(totalDurationSeconds))
+            .font(.system(size: 10, weight: .semibold))
+            .foregroundStyle(palette.secondaryText)
+            .lineLimit(1)
+        }
       }
 
       Spacer(minLength: 0)
@@ -31,4 +38,15 @@ struct WatchHistoryCard: View {
     .background(palette.cardBackground)
     .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
   }
+}
+
+private func formatWatchHistoryDuration(_ seconds: Int) -> String {
+  let minutes = seconds / 60
+  let remainingSeconds = seconds % 60
+
+  if remainingSeconds == 0 {
+    return "\(minutes) min"
+  }
+
+  return "\(minutes)m \(remainingSeconds)s"
 }

@@ -1,4 +1,4 @@
-import type { StepType } from "../programs";
+import type { DifficultyLevel, PainLevel, StepType } from "../programs";
 
 export type WatchWorkoutState =
   | "scheduled"
@@ -29,14 +29,30 @@ export type WatchProgramSummarySnapshot = {
   isSelected: boolean;
 };
 
+export type WatchCourseFeedbackSnapshot = {
+  completedAt: string;
+  difficulty: DifficultyLevel;
+  pain: PainLevel;
+  feeling: string;
+};
+
 export type WatchHistoryEntrySnapshot = {
   id: string;
   courseId: string;
   courseName: string;
+  feedback?: WatchCourseFeedbackSnapshot;
   programId: string;
   programName: string;
+  steps: Array<{
+    durationSeconds: number;
+    id: string;
+    label: string;
+    target?: WatchStepTargetSnapshot;
+    type: StepType;
+  }>;
   weekIndex: number;
   status: "partial" | "done";
+  totalDurationSeconds: number;
   updatedAt?: string;
 };
 

@@ -5,5 +5,5 @@ enum WatchRoute: Hashable {
   case programs
   case history
   case settings
-  case raceDetail
+  case raceDetail(String)
 }

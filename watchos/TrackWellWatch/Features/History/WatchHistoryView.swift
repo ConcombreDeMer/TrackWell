@@ -22,7 +22,7 @@ struct WatchHistoryView: View {
         } else {
           VStack(spacing: 10) {
             ForEach(items) { item in
-              NavigationLink(value: WatchRoute.raceDetail) {
+              NavigationLink(value: WatchRoute.raceDetail(item.id)) {
                 WatchHistoryCard(item: item)
               }
               .buttonStyle(.plain)
